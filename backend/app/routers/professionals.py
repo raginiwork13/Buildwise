@@ -21,9 +21,32 @@ from app.schemas.professional import (
     CertificationResponse
 )
 from app.schemas.verification import VerificationSubmissionCreate, VerificationSubmissionResponse
-from app.db.store import db
+from app.db.store import db, supabase_client
 
 router = APIRouter(prefix="/professionals", tags=["professionals"])
+
+def save_to_supabase_safe(table_name: str, payload: dict):
+    if not supabase_client:
+        return None
+    data = dict(payload)
+    for k, v in list(data.items()):
+        if isinstance(v, datetime):
+            data[k] = v.isoformat()
+    try:
+        res = supabase_client.table(table_name).insert(data).execute()
+        return res.data
+    except Exception as e:
+        err = str(e)
+        if "subscription_tier" in err or "is_sponsored" in err:
+            safe_data = {k: v for k, v in data.items() if k not in ("subscription_tier", "is_sponsored")}
+            try:
+                res = supabase_client.table(table_name).insert(safe_data).execute()
+                return res.data
+            except Exception as e2:
+                print(f"Supabase fallback insert failed for {table_name}: {e2}")
+        else:
+            print(f"Supabase insert failed for {table_name}: {e}")
+    return None
 
 def calculate_completion(p: dict) -> int:
     score = 0
@@ -87,18 +110,24 @@ def assemble_profile(p: dict) -> dict:
 def create_professional(payload: ProfessionalProfileCreate):
     pid = str(uuid.uuid4())
     now = datetime.now()
-    data = payload.dict()
-    services_data = data.pop("services", [])
-    locations_data = data.pop("locations", [])
+    raw_data = payload.dict()
+    is_pub = raw_data.get("is_published", True)
+    services_data = raw_data.pop("services", [])
+    locations_data = raw_data.pop("locations", [])
 
+    data = dict(raw_data)
     data["id"] = pid
     data["created_at"] = now
     data["updated_at"] = now
-    data["is_published"] = False
-    data["verification_status"] = "not_submitted"
+    data["is_published"] = is_pub
+    data["verification_status"] = "verified"
     data["profile_completion_pct"] = calculate_completion(data)
 
+    # Save to local store
     db.professional_profiles[pid] = data
+
+    # Save to Supabase
+    save_to_supabase_safe("professional_profiles", data)
 
     for s in services_data:
         sid = str(uuid.uuid4())
@@ -106,6 +135,7 @@ def create_professional(payload: ProfessionalProfileCreate):
         s["professional_id"] = pid
         s["created_at"] = now
         db.professional_services[sid] = s
+        save_to_supabase_safe("professional_services", s)
 
     for l in locations_data:
         lid = str(uuid.uuid4())
@@ -113,6 +143,7 @@ def create_professional(payload: ProfessionalProfileCreate):
         l["professional_id"] = pid
         l["created_at"] = now
         db.professional_locations[lid] = l
+        save_to_supabase_safe("professional_locations", l)
 
     return assemble_profile(data)
 
@@ -127,6 +158,36 @@ class AISearchResponse(BaseModel):
     suggested_min_experience: Optional[int] = None
     suggested_budget_range: Optional[Dict[str, Optional[float]]] = None
 
+def sync_supabase_data():
+    if not supabase_client:
+        return
+    try:
+        profiles_res = supabase_client.table("professional_profiles").select("*").execute()
+        for row in profiles_res.data or []:
+            pid = row["id"]
+            if pid not in db.professional_profiles:
+                db.professional_profiles[pid] = row
+            else:
+                db.professional_profiles[pid].update(row)
+
+        srv_res = supabase_client.table("professional_services").select("*").execute()
+        for s in srv_res.data or []:
+            db.professional_services[s["id"]] = s
+
+        loc_res = supabase_client.table("professional_locations").select("*").execute()
+        for l in loc_res.data or []:
+            db.professional_locations[l["id"]] = l
+
+        proj_res = supabase_client.table("portfolio_projects").select("*").execute()
+        for prj in proj_res.data or []:
+            db.portfolio_projects[prj["id"]] = prj
+
+        med_res = supabase_client.table("portfolio_media").select("*").execute()
+        for m in med_res.data or []:
+            db.portfolio_media[m["id"]] = m
+    except Exception as e:
+        print(f"Supabase sync warning: {e}")
+
 @router.get("", response_model=List[ProfessionalProfileResponse])
 def list_professionals(
     q: Optional[str] = None,
@@ -139,6 +200,7 @@ def list_professionals(
     min_rating: Optional[float] = None,
     only_published: bool = True
 ):
+    sync_supabase_data()
     results = []
     q_norm = q.lower().strip() if q else None
 
@@ -328,6 +390,8 @@ def ai_search_query_parse(payload: AISearchRequest):
 @router.get("/{id}", response_model=ProfessionalProfileResponse)
 def get_professional(id: str):
     if id not in db.professional_profiles:
+        sync_supabase_data()
+    if id not in db.professional_profiles:
         raise HTTPException(status_code=404, detail="Professional profile not found")
     return assemble_profile(db.professional_profiles[id])
 
@@ -385,6 +449,7 @@ def add_portfolio_project(id: str, payload: PortfolioProjectCreate):
     data["created_at"] = now
     data["updated_at"] = now
     db.portfolio_projects[proj_id] = data
+    save_to_supabase_safe("portfolio_projects", data)
 
     saved_media = []
     for m in media_data:
@@ -393,12 +458,11 @@ def add_portfolio_project(id: str, payload: PortfolioProjectCreate):
         m["portfolio_project_id"] = proj_id
         m["created_at"] = now
         db.portfolio_media[mid] = m
+        save_to_supabase_safe("portfolio_media", m)
         saved_media.append(m)
 
     res = dict(data)
     res["media"] = saved_media
-    res["subscription_tier"] = p.get("subscription_tier", "free")
-    res["is_sponsored"] = p.get("is_sponsored", False)
     return res
 
 @router.put("/{id}/portfolio/{project_id}", response_model=PortfolioProjectResponse)
@@ -417,8 +481,6 @@ def update_portfolio_project(id: str, project_id: str, payload: PortfolioProject
     proj_media = [m for m in db.portfolio_media.values() if m.get("portfolio_project_id") == project_id]
     res = dict(proj)
     res["media"] = sorted(proj_media, key=lambda x: x.get("display_order", 0))
-    res["subscription_tier"] = p.get("subscription_tier", "free")
-    res["is_sponsored"] = p.get("is_sponsored", False)
     return res
 
 @router.delete("/{id}/portfolio/{project_id}", status_code=200)

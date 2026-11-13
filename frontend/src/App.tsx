@@ -14,6 +14,9 @@ import { RegistrationModal } from './components/RegistrationModal';
 
 import { CreateProfessionalProfile } from './pages/professional/CreateProfile';
 import { PublicProfessionalProfile } from './pages/professional/PublicProfile';
+import { ProfessionalMarketplacePage } from './pages/professional/ProfessionalMarketplacePage';
+import { CreateSupplierProfile } from './pages/supplier/CreateSupplierProfile';
+import { SupplierMarketplacePage } from './pages/supplier/SupplierMarketplacePage';
 import { PublicSupplierProfile } from './pages/supplier/PublicSupplierProfile';
 import { VerificationManagement } from './pages/admin/VerificationManagement';
 
@@ -21,7 +24,7 @@ export const HomePage: React.FC = () => {
   return (
     <>
       <HeroSection />
-      <ProfessionalDiscovery />
+      <ProfessionalDiscovery isHomePageView={true} />
       <RoleExplorer />
       <CostEstimatorPreview />
       <FeaturedPros />
@@ -39,8 +42,11 @@ export const AppContent: React.FC = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/professionals" element={<ProfessionalMarketplacePage />} />
           <Route path="/professionals/new" element={<CreateProfessionalProfile />} />
           <Route path="/professionals/:id" element={<PublicProfessionalProfile />} />
+          <Route path="/suppliers" element={<SupplierMarketplacePage />} />
+          <Route path="/suppliers/new" element={<CreateSupplierProfile />} />
           <Route path="/suppliers/:id" element={<PublicSupplierProfile />} />
           <Route path="/admin/verifications" element={<VerificationManagement />} />
         </Routes>
