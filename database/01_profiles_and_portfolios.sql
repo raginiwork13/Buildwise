@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS public.professional_profiles (
     is_published BOOLEAN DEFAULT FALSE,
     profile_completion_pct INT DEFAULT 20,
     verification_status VARCHAR(30) DEFAULT 'not_submitted' CHECK (verification_status IN ('not_submitted', 'pending', 'under_review', 'verified', 'rejected')),
+    subscription_tier VARCHAR(20) DEFAULT 'free' CHECK (subscription_tier IN ('free', 'pro', 'premium')),
+    is_sponsored BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -43,6 +45,8 @@ CREATE INDEX IF NOT EXISTS idx_prof_category ON public.professional_profiles(cat
 CREATE INDEX IF NOT EXISTS idx_prof_district ON public.professional_profiles(district);
 CREATE INDEX IF NOT EXISTS idx_prof_is_published ON public.professional_profiles(is_published);
 CREATE INDEX IF NOT EXISTS idx_prof_verification ON public.professional_profiles(verification_status);
+CREATE INDEX IF NOT EXISTS idx_prof_subscription ON public.professional_profiles(subscription_tier);
+CREATE INDEX IF NOT EXISTS idx_prof_sponsored ON public.professional_profiles(is_sponsored);
 
 -- -----------------------------------------------------------------------------
 -- 2. PROFESSIONAL SERVICES OFFERED

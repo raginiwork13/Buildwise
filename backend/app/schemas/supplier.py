@@ -65,37 +65,57 @@ class SupplierCategoryResponse(SupplierCategoryBase):
 # --- Supplier Profile ---
 class SupplierProfileBase(BaseModel):
     company_name: str
+    contact_person_name: Optional[str] = None
+    business_type: str = "Individual proprietor"  # 'Individual proprietor' | 'Partnership' | 'Private limited company' | 'Other'
+    year_of_establishment: Optional[int] = None
+    description: str = ""
     logo_url: Optional[str] = None
-    description: str
     business_email: str
     phone: str
+    alt_phone: Optional[str] = None
     website: Optional[str] = None
+    state: str = "Goa"
+    district: str = "South Goa"
+    city: str = "Verna"
+    pincode: Optional[str] = None
     business_address: Optional[str] = None
-    primary_location: str
-    delivery_locations: List[str] = []
+    primary_location: str = "Verna Industrial Estate, Goa"
+    delivery_locations: List[str] = ["North Goa", "South Goa"]
+    subscription_tier: str = "free"  # 'free' | 'pro' | 'premium'
+    is_sponsored: bool = False
 
 class SupplierProfileCreate(SupplierProfileBase):
     categories: Optional[List[SupplierCategoryCreate]] = []
+    is_published: bool = True
 
 class SupplierProfileUpdate(BaseModel):
     company_name: Optional[str] = None
-    logo_url: Optional[str] = None
+    contact_person_name: Optional[str] = None
+    business_type: Optional[str] = None
+    year_of_establishment: Optional[int] = None
     description: Optional[str] = None
+    logo_url: Optional[str] = None
     business_email: Optional[str] = None
     phone: Optional[str] = None
+    alt_phone: Optional[str] = None
     website: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    city: Optional[str] = None
+    pincode: Optional[str] = None
     business_address: Optional[str] = None
     primary_location: Optional[str] = None
     delivery_locations: Optional[List[str]] = None
+    subscription_tier: Optional[str] = None
+    is_sponsored: Optional[bool] = None
     is_published: Optional[bool] = None
 
 class SupplierProfileResponse(SupplierProfileBase):
     id: str
-    is_published: bool = False
+    is_published: bool = True
     profile_completion_pct: int = 20
-    verification_status: str = "not_submitted"
+    verification_status: str = "verified"
     categories: List[SupplierCategoryResponse] = []
     products: List[SupplierProductResponse] = []
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-

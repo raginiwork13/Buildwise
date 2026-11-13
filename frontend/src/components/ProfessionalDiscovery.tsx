@@ -19,10 +19,14 @@ import {
 } from 'lucide-react';
 import type { ProfessionalProfileFull } from '../types/profile';
 
-export const ProfessionalDiscovery: React.FC = () => {
+interface ProfessionalDiscoveryProps {
+  isHomePageView?: boolean;
+}
+
+export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({ isHomePageView = false }) => {
   const [profiles, setProfiles] = useState<ProfessionalProfileFull[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [, setError] = useState<string | null>(null);
+  const [backendError, setBackendError] = useState<boolean>(false);
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -46,7 +50,7 @@ export const ProfessionalDiscovery: React.FC = () => {
 
   const fetchProfessionals = async () => {
     setLoading(true);
-    setError(null);
+    setBackendError(false);
     try {
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.append('q', searchTerm.trim());
@@ -63,7 +67,8 @@ export const ProfessionalDiscovery: React.FC = () => {
       setProfiles(data);
     } catch (err: unknown) {
       console.error(err);
-      setError('Unable to fetch live profiles from backend service.');
+      setBackendError(true);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
@@ -135,6 +140,12 @@ export const ProfessionalDiscovery: React.FC = () => {
     return `₹${val.toLocaleString('en-IN')}`;
   };
 
+  // Home page: only show sponsored (premium + pro) profiles
+  // Marketplace page: show all profiles (already sorted: premium → pro → free by backend)
+  const displayedProfiles = isHomePageView
+    ? profiles.filter(p => p.subscription_tier === 'premium' || p.subscription_tier === 'pro' || p.is_sponsored)
+    : profiles;
+
   return (
     <section id="marketplace-search" className="py-12 sm:py-16 bg-slate-50 border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -144,13 +155,15 @@ export const ProfessionalDiscovery: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-800 border border-amber-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Feature 3: Professional Discovery & Marketplace Search</span>
+              <span>{isHomePageView ? 'Featured Sponsored Professionals' : 'Professional Discovery & Marketplace Search'}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mt-2.5">
-              Find Verified Goa Construction Professionals
+              {isHomePageView ? 'Top Sponsored Builders & Architects in Goa' : 'Find Verified Goa Construction Professionals'}
             </h2>
             <p className="text-slate-600 text-sm sm:text-base mt-1.5 max-w-2xl">
-              Amazon-style tiered ranking: Premium & Pro sponsored builders featured at the top, followed by organically segregated profiles by verified reviews and years in the field.
+              {isHomePageView
+                ? 'Premium & Pro sponsored professionals displayed below — the highest-rated, most visible builders in Goa\'s construction network.'
+                : 'Amazon-style tiered ranking: Premium & Pro sponsored builders featured at the top, followed by organically segregated profiles by verified reviews and years in the field.'}
             </p>
           </div>
 
@@ -171,8 +184,8 @@ export const ProfessionalDiscovery: React.FC = () => {
           </div>
         </div>
 
-        {/* AI NATURAL LANGUAGE SEARCH BOX (OPTIONAL / TOGGLEABLE) */}
-        {showAiSearch && (
+        {/* AI NATURAL LANGUAGE SEARCH BOX — Marketplace page only */}
+        {!isHomePageView && showAiSearch && (
           <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-indigo-500/10 p-5 rounded-2xl border-2 border-amber-300 shadow-sm animate-in fade-in duration-200">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-amber-600" />
@@ -208,7 +221,8 @@ export const ProfessionalDiscovery: React.FC = () => {
           </div>
         )}
 
-        {/* TOP SEARCH BAR (AMAZON / MARKETPLACE STYLE) */}
+        {/* TOP SEARCH BAR — Marketplace page only */}
+        {!isHomePageView && (
         <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
           <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row items-center gap-2">
             
@@ -262,8 +276,138 @@ export const ProfessionalDiscovery: React.FC = () => {
             </button>
           </form>
         </div>
+        )} {/* end !isHomePageView search bar */}
 
-        {/* MAIN MARKETPLACE LAYOUT: SIDEBAR FILTERS + PRODUCT/PROFILE GRID */}
+        {/* MAIN MARKETPLACE LAYOUT */}
+        {/* On home page: just the cards in a simple full-width grid */}
+        {/* On marketplace page: sidebar filters + cards grid */}
+        {isHomePageView ? (
+          /* ── HOME PAGE: Sponsored cards full width ── */
+          <div className="space-y-4">
+            {/* Loading State */}
+            {loading && (
+              <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
+                <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+                <div className="font-bold text-slate-800 text-sm">Loading featured profiles...</div>
+              </div>
+            )}
+            {!loading && backendError && (
+              <div className="p-8 text-center bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
+                <RefreshCw className="w-8 h-8 text-amber-700 mx-auto" />
+                <h3 className="font-bold text-amber-950 text-base">Backend API Server Not Running</h3>
+                <p className="text-xs text-amber-800 max-w-md mx-auto">
+                  Start your FastAPI backend: <code className="bg-slate-900 text-amber-400 px-2 py-0.5 rounded">uvicorn app.main:app --reload --port 8000</code>
+                </p>
+                <button onClick={fetchProfessionals} className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl cursor-pointer">Retry</button>
+              </div>
+            )}
+            {!loading && !backendError && displayedProfiles.length === 0 && (
+              <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-slate-300 space-y-2">
+                <h3 className="font-bold text-slate-900">No Sponsored Professionals Yet</h3>
+                <p className="text-xs text-slate-500">No Premium or Pro professionals are currently listed. Check the full marketplace for all verified profiles.</p>
+                <Link to="/professionals" className="inline-block mt-2 px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-amber-500 hover:text-slate-950 transition-all">View All Professionals</Link>
+              </div>
+            )}
+            {!loading && !backendError && displayedProfiles.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {displayedProfiles.map((prof) => {
+                  const isPremium = prof.subscription_tier === 'premium';
+                  return (
+                    <div
+                      key={prof.id}
+                      className={`bg-white rounded-2xl border p-5 relative overflow-hidden hover:shadow-lg transition-all duration-200 ${
+                        isPremium ? 'border-indigo-300 ring-2 ring-indigo-500/10' : 'border-amber-300 ring-1 ring-amber-500/10'
+                      }`}
+                    >
+                      {/* Sponsored Badge */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          isPremium ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-slate-950'
+                        }`}>
+                          {isPremium ? <Crown className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
+                          SPONSORED {isPremium ? '· PREMIUM' : '· PRO'}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-4 items-start">
+                        <div className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                          <img
+                            src={prof.profile_photo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                            alt={prof.full_name}
+                            className="w-full h-full object-cover"
+                          />
+                          {prof.verification_status === 'verified' && (
+                            <div className="absolute bottom-1 right-1 bg-emerald-600 text-white p-0.5 rounded-full">
+                              <ShieldCheck className="w-3 h-3" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-black text-slate-900 text-sm leading-tight">
+                            <Link to={`/professionals/${prof.id}`} className="hover:text-amber-600 transition-colors">
+                              {prof.company_name || prof.full_name}
+                            </Link>
+                          </h3>
+                          <div className="text-xs text-slate-500 mt-0.5 capitalize">{prof.category.replace('_', ' ')} · {prof.experience_years} yrs</div>
+                          <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 text-amber-500" />{prof.city}, {prof.district}
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-1 bg-amber-400/20 text-amber-900 px-2 py-0.5 rounded-lg text-xs font-black">
+                              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                              <span>{prof.average_rating ? prof.average_rating.toFixed(1) : '4.8'}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400">({prof.review_count || 0} reviews)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {prof.bio && (
+                        <p className="text-xs text-slate-600 line-clamp-2 mt-3 leading-relaxed">{prof.bio}</p>
+                      )}
+
+                      <div className="flex gap-2 mt-4">
+                        <Link
+                          to={`/professionals/${prof.id}`}
+                          className="flex-1 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <span>View Profile</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => { setEnquiryModalProf(prof); setEnquirySent(false); setEnquiryText(''); }}
+                          className="flex-1 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>Enquire</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* View All CTA */}
+            {!loading && !backendError && (
+              <div className="pt-2 text-center">
+                <Link
+                  to="/professionals"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
+                >
+                  <span>Explore All Verified Professionals in Marketplace</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <p className="text-xs text-slate-400 mt-2">
+                  View Premium, Pro & Free professionals — full search, filters, ratings & portfolio comparison
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+        /* ── MARKETPLACE PAGE: Sidebar filters + full listing ── */
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           
           {/* LEFT SIDEBAR: FILTERS */}
@@ -380,12 +524,20 @@ export const ProfessionalDiscovery: React.FC = () => {
             {/* Results bar */}
             <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
               <div>
-                Showing <span className="font-bold text-slate-900">{profiles.length}</span> Verified Construction Profiles
+                {isHomePageView ? (
+                  <>
+                    Showing <span className="font-bold text-slate-900">{displayedProfiles.length}</span> <span className="text-amber-700 font-bold">Sponsored</span> Professionals (Premium & Pro)
+                  </>
+                ) : (
+                  <>
+                    Showing <span className="font-bold text-slate-900">{displayedProfiles.length}</span> Verified Construction Profiles
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-slate-400">Sort by:</span>
                 <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
-                  Sponsored Tier & Ratings
+                  {isHomePageView ? 'Sponsored First' : 'Sponsored Tier & Ratings'}
                 </span>
               </div>
             </div>
@@ -399,7 +551,28 @@ export const ProfessionalDiscovery: React.FC = () => {
             )}
 
             {/* Error or Empty State */}
-            {!loading && profiles.length === 0 && (
+            {!loading && backendError && (
+              <div className="p-8 text-center bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-700">
+                  <RefreshCw className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-amber-950 text-base">Backend API Server Not Running</h3>
+                <p className="text-xs text-amber-800 max-w-md mx-auto">
+                  The frontend is trying to query <code>http://localhost:8000/api/v1/professionals</code>, but your FastAPI server is currently stopped in your backend terminal.
+                </p>
+                <div className="bg-slate-900 text-amber-400 font-mono text-xs p-3 rounded-xl max-w-md mx-auto text-left">
+                  uvicorn app.main:app --reload --port 8000
+                </div>
+                <button
+                  onClick={fetchProfessionals}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer shadow-xs"
+                >
+                  Retry Connection
+                </button>
+              </div>
+            )}
+
+            {!loading && !backendError && profiles.length === 0 && (
               <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300 space-y-3">
                 <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
                   <Filter className="w-6 h-6" />
@@ -418,9 +591,9 @@ export const ProfessionalDiscovery: React.FC = () => {
             )}
 
             {/* PROFESSIONAL PROFILE CARDS GRID (AMAZON / OLX STYLE) */}
-            {!loading && profiles.length > 0 && (
+            {!loading && displayedProfiles.length > 0 && (
               <div className="space-y-4">
-                {profiles.map((prof) => {
+                {displayedProfiles.map((prof) => {
                   const isPremium = prof.subscription_tier === 'premium';
                   const isPro = prof.subscription_tier === 'pro';
                   const isSponsored = isPremium || isPro || prof.is_sponsored;
@@ -613,9 +786,12 @@ export const ProfessionalDiscovery: React.FC = () => {
               </div>
             )}
 
+            {/* View All Button on Home Page — now handled in home section above, remove old one */}
+
           </div>
 
         </div>
+        )} {/* end isHomePageView ternary */}
 
       </div>
 
