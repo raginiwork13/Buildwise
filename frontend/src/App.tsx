@@ -1,11 +1,10 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { ProfessionalDiscovery } from './components/ProfessionalDiscovery';
 import { RoleExplorer } from './components/RoleExplorer';
-import { CostEstimatorPreview } from './components/CostEstimatorPreview';
 import { FeaturedPros } from './components/FeaturedPros';
 import { SupplierShowcase } from './components/SupplierShowcase';
 import { HowItWorks } from './components/HowItWorks';
@@ -21,6 +20,17 @@ import { SupplierMarketplacePage } from './pages/supplier/SupplierMarketplacePag
 import { PublicSupplierProfile } from './pages/supplier/PublicSupplierProfile';
 import { CustomerProjectsPage } from './pages/customer/CustomerProjectsPage';
 import { VerificationManagement } from './pages/admin/VerificationManagement';
+import { CostEstimatorPage } from './pages/CostEstimatorPage';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 export const HomePage: React.FC = () => {
   return (
@@ -28,7 +38,6 @@ export const HomePage: React.FC = () => {
       <HeroSection />
       <ProfessionalDiscovery isHomePageView={true} />
       <RoleExplorer />
-      <CostEstimatorPreview />
       <FeaturedPros />
       <SupplierShowcase />
       <HowItWorks />
@@ -44,6 +53,7 @@ export const AppContent: React.FC = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/cost-estimator" element={<CostEstimatorPage />} />
           <Route path="/professionals" element={<ProfessionalMarketplacePage />} />
           <Route path="/professionals/new" element={<CreateProfessionalProfile />} />
           <Route path="/professionals/:id" element={<PublicProfessionalProfile />} />
@@ -65,6 +75,7 @@ export const AppContent: React.FC = () => {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <UserProvider>
         <AppContent />
       </UserProvider>

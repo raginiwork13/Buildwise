@@ -88,10 +88,11 @@ export const Navbar: React.FC = () => {
               <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
               <span>Projects</span>
             </Link>
-            <a href="/#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1 text-xs">
-              <Sparkles className="w-3 h-3 text-amber-500" />
+            <Link to="/cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
-            </a>
+            </Link>
+            <a href="/#how-it-works" className="hover:text-amber-600 transition-colors text-xs">How It Works</a>
           </nav>
 
           {/* Right Action: Notifications & Profile Box */}

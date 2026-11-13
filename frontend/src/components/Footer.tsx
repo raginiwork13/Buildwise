@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Building2, MapPin } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
@@ -33,7 +34,7 @@ export const Footer: React.FC = () => {
               <li><a href="#professionals" className="hover:text-amber-400 transition-colors">Architects & Planners</a></li>
               <li><a href="#professionals" className="hover:text-amber-400 transition-colors">Structural Engineers</a></li>
               <li><a href="#materials" className="hover:text-amber-400 transition-colors">TMT Steel & Cement Suppliers</a></li>
-              <li><a href="#cost-estimator" className="hover:text-amber-400 transition-colors">Goa Cost Estimator</a></li>
+              <li><Link to="/cost-estimator" className="hover:text-amber-400 transition-colors">Goa Cost Estimator</Link></li>
             </ul>
           </div>
 
