@@ -1,11 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { HardHat, Home, Truck, ChevronDown, Sparkles, Building2, UserPlus, Coins } from 'lucide-react';
+import { 
+  HardHat, 
+  Home, 
+  Truck, 
+  ChevronDown, 
+  Sparkles, 
+  Building2, 
+  UserPlus, 
+  Coins, 
+  MessageSquare
+} from 'lucide-react';
 import type { UserRole } from '../types';
+import { NotificationBell } from './notifications/NotificationBell';
+import { BuildwiseApiClient } from '../api/buildwiseApi';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  activeView?: 'home' | 'notifications' | 'messages';
+  onNavigateView?: (view: 'home' | 'notifications' | 'messages') => void;
+  onNavigateToContext?: (url?: string) => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({
+  activeView = 'home',
+  onNavigateView,
+  onNavigateToContext
+}) => {
   const { currentUser, role, switchRole, setOpenRegisterModal, setSelectedRoleForModal } = useUser();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadMsgCount, setUnreadMsgCount] = useState<number>(0);
+
+  const fetchUnreadMessages = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const convs = await BuildwiseApiClient.getConversations(currentUser.id);
+      const totalUnread = convs.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+      setUnreadMsgCount(totalUnread);
+    } catch {
+      // Fallback
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadMessages();
+    const interval = setInterval(fetchUnreadMessages, 4000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
 
   const roleConfig = {
     customer: {
@@ -33,14 +73,29 @@ export const Navbar: React.FC = () => {
     setDropdownOpen(false);
   };
 
+  const handleNavClick = (view: 'home' | 'notifications' | 'messages', hash?: string) => {
+    if (onNavigateView) {
+      onNavigateView(view);
+    }
+    if (hash && view === 'home') {
+      setTimeout(() => {
+        const el = document.querySelector(hash);
+        el?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <a href="/" className="flex items-center gap-2.5 group">
+            <button 
+              onClick={() => handleNavClick('home')} 
+              className="flex items-center gap-2.5 group text-left cursor-pointer"
+            >
               <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-amber-400 shadow-md group-hover:scale-105 transition-transform">
                 <Building2 className="w-6 h-6" />
               </div>
@@ -51,23 +106,89 @@ export const Navbar: React.FC = () => {
                 </span>
                 <span className="block text-[10px] text-slate-500 tracking-wider uppercase font-medium">AI Construction Marketplace</span>
               </div>
-            </a>
+            </button>
           </div>
 
           {/* Center Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#professionals" className="hover:text-amber-600 transition-colors">Find Professionals</a>
-            <a href="#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5">
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
+            <button
+              onClick={() => handleNavClick('home', '#professionals')}
+              className="hover:text-amber-600 transition-colors cursor-pointer"
+            >
+              Find Professionals
+            </button>
+            <button
+              onClick={() => handleNavClick('home', '#cost-estimator')}
+              className="hover:text-amber-600 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
-            </a>
-            <a href="#materials" className="hover:text-amber-600 transition-colors">Materials Marketplace</a>
-            <a href="#how-it-works" className="hover:text-amber-600 transition-colors">How It Works</a>
+            </button>
+            <button
+              onClick={() => handleNavClick('home', '#materials')}
+              className="hover:text-amber-600 transition-colors cursor-pointer"
+            >
+              Materials Marketplace
+            </button>
+            <button
+              onClick={() => handleNavClick('home', '#how-it-works')}
+              className="hover:text-amber-600 transition-colors cursor-pointer"
+            >
+              How It Works
+            </button>
+
+            {/* Direct Communication Nav Links */}
+            <div className="h-4 w-px bg-slate-200" />
+
+            <button
+              onClick={() => handleNavClick('messages')}
+              className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+                activeView === 'messages' ? 'text-amber-600 font-bold' : 'hover:text-amber-600'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+              <span>Messages</span>
+              {unreadMsgCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-amber-500 text-slate-950 text-[10px] font-black rounded-full shadow-xs">
+                  {unreadMsgCount}
+                </span>
+              )}
+            </button>
           </nav>
 
-          {/* Right Action: Active User Persona & Registration */}
-          <div className="flex items-center gap-3">
+          {/* Right Action: Notifications, Active User Persona & Registration */}
+          <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* Feature 8 Notification Bell with Live Unread Counter */}
+            {currentUser && (
+              <NotificationBell
+                userId={currentUser.id}
+                onOpenNotificationsPage={() => {
+                  if (onNavigateView) onNavigateView('notifications');
+                }}
+                onNavigateToContext={(url) => {
+                  if (url?.includes('/messages')) {
+                    if (onNavigateView) onNavigateView('messages');
+                  } else if (onNavigateToContext) {
+                    onNavigateToContext(url);
+                  }
+                }}
+              />
+            )}
+
+            {/* Quick Messages Icon for Mobile */}
+            <button
+              onClick={() => handleNavClick('messages')}
+              className="lg:hidden relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <MessageSquare className="w-5 h-5" />
+              {unreadMsgCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center">
+                  {unreadMsgCount}
+                </span>
+              )}
+            </button>
+
             {/* Active User Persona Pill & Quick Switcher */}
             <div className="relative">
               <button
@@ -75,8 +196,8 @@ export const Navbar: React.FC = () => {
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold shadow-xs transition-all cursor-pointer ${currentRoleInfo.badgeClass}`}
               >
                 <IconComponent className="w-3.5 h-3.5" />
-                <span>{currentUser ? currentUser.fullName : 'Guest'}</span>
-                <span className="text-[10px] opacity-75">({currentRoleInfo.label})</span>
+                <span className="max-w-[100px] sm:max-w-none truncate">{currentUser ? currentUser.fullName : 'Guest'}</span>
+                <span className="text-[10px] opacity-75 hidden sm:inline">({currentRoleInfo.label})</span>
                 <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
               </button>
 
@@ -147,10 +268,10 @@ export const Navbar: React.FC = () => {
                 setSelectedRoleForModal('customer');
                 setOpenRegisterModal(true);
               }}
-              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5 text-amber-400" />
-              <span>Register Profile</span>
+              <span>Register</span>
             </button>
 
           </div>

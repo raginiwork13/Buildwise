@@ -2,8 +2,13 @@ import React from 'react';
 import { useUser } from '../context/UserContext';
 import { FEATURED_MATERIALS } from '../data/mockData';
 import { Truck, MapPin, CheckCircle, ShoppingCart } from 'lucide-react';
+import type { MaterialCategoryItem } from '../types';
 
-export const SupplierShowcase: React.FC = () => {
+interface SupplierShowcaseProps {
+  onRequestRFQ?: (mat: MaterialCategoryItem) => void;
+}
+
+export const SupplierShowcase: React.FC<SupplierShowcaseProps> = ({ onRequestRFQ }) => {
   const { setOpenRegisterModal, setSelectedRoleForModal } = useUser();
 
   return (
@@ -80,13 +85,17 @@ export const SupplierShowcase: React.FC = () => {
               <div className="p-4 pt-0">
                 <button
                   onClick={() => {
-                    setSelectedRoleForModal('customer');
-                    setOpenRegisterModal(true);
+                    if (onRequestRFQ) {
+                      onRequestRFQ(mat);
+                    } else {
+                      setSelectedRoleForModal('customer');
+                      setOpenRegisterModal(true);
+                    }
                   }}
-                  className="w-full py-2 px-3 bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-800 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-900 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>Request RFQ / Bulk Quote</span>
+                  <ShoppingCart className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
+                  <span>Request RFQ / Chat with Supplier</span>
                 </button>
               </div>
             </div>

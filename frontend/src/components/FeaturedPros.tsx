@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { FEATURED_PROFESSIONALS } from '../data/mockData';
-import { Star, MapPin, ShieldCheck, ArrowRight, Award } from 'lucide-react';
+import { Star, MapPin, ShieldCheck, ArrowRight, Award, MessageSquare } from 'lucide-react';
+import type { FeaturedProfessional } from '../types';
 
-export const FeaturedPros: React.FC = () => {
+interface FeaturedProsProps {
+  onStartChat?: (pro: FeaturedProfessional) => void;
+}
+
+export const FeaturedPros: React.FC<FeaturedProsProps> = ({ onStartChat }) => {
   const { setOpenRegisterModal, setSelectedRoleForModal } = useUser();
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterDistrict, setFilterDistrict] = useState<string>('all');
@@ -128,8 +133,8 @@ export const FeaturedPros: React.FC = () => {
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="p-4 pt-0">
+              {/* Action Buttons */}
+              <div className="p-4 pt-0 space-y-2">
                 <button
                   onClick={() => {
                     setSelectedRoleForModal('customer');
@@ -140,6 +145,16 @@ export const FeaturedPros: React.FC = () => {
                   <span>Request Quotation</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+
+                {onStartChat && (
+                  <button
+                    onClick={() => onStartChat(pro)}
+                    className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs rounded-xl border border-amber-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Chat with Contractor</span>
+                  </button>
+                )}
               </div>
 
             </div>

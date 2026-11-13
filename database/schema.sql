@@ -164,3 +164,81 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- -----------------------------------------------------------------------------
+-- 7. NOTIFICATIONS & COMMUNICATION (FEATURE 8)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL CHECK (category IN (
+        'project_update', 
+        'enquiry', 
+        'quotation', 
+        'message', 
+        'milestone', 
+        'supplier_enquiry',
+        'system'
+    )),
+    action_url TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    is_dismissed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.conversations (
+    id VARCHAR(64) PRIMARY KEY,
+    context_type VARCHAR(30) NOT NULL DEFAULT 'general' CHECK (context_type IN ('project', 'product_rfq', 'direct', 'general')),
+    project_id VARCHAR(64),
+    product_id VARCHAR(64),
+    context_title VARCHAR(255),
+    title VARCHAR(255),
+    created_by VARCHAR(64) NOT NULL,
+    last_message_preview TEXT,
+    last_message_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.conversation_participants (
+    conversation_id VARCHAR(64) NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL,
+    role VARCHAR(30) DEFAULT 'participant',
+    user_name VARCHAR(255),
+    user_role VARCHAR(30),
+    company_name VARCHAR(255),
+    avatar_url TEXT,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (conversation_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.messages (
+    id VARCHAR(64) PRIMARY KEY,
+    conversation_id VARCHAR(64) NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+    sender_id VARCHAR(64) NOT NULL,
+    sender_name VARCHAR(255),
+    sender_role VARCHAR(30),
+    content TEXT NOT NULL,
+    message_type VARCHAR(30) NOT NULL DEFAULT 'text' CHECK (message_type IN (
+        'text', 
+        'system', 
+        'quotation_link', 
+        'project_link', 
+        'product_rfq',
+        'file'
+    )),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON public.notifications (user_id, is_read) WHERE is_dismissed = FALSE;
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_created ON public.messages (conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_participants_user ON public.conversation_participants (user_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_last_msg ON public.conversations (last_message_at DESC);
+
+
