@@ -1,36 +1,39 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { HardHat, Home, Truck, ChevronDown, Sparkles, Building2, UserPlus, Coins } from 'lucide-react';
+import { 
+  Building2, Sparkles, ChevronDown, User, Bell, Edit3, 
+  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { UserRole } from '../types';
 
 export const Navbar: React.FC = () => {
   const { currentUser, role, switchRole, setOpenRegisterModal, setSelectedRoleForModal } = useUser();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const roleConfig = {
-    customer: {
-      label: 'Customer / Owner',
-      badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
-      icon: Home
-    },
-    professional: {
-      label: 'Contractor / Pro',
-      badgeClass: 'bg-amber-100 text-amber-900 border-amber-200',
-      icon: HardHat
-    },
-    supplier: {
-      label: 'Material Supplier',
-      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      icon: Truck
-    }
+  // Mock notifications for demonstration
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'New Villa Lead in Porvorim', desc: 'Customer Rahul posted a 3,200 sq.ft residential project matching your area.', time: '10m ago', unread: true },
+    { id: 2, title: 'License Verification Approved', desc: 'Your PWD Class-1 certificate was verified by admin.', time: '1h ago', unread: true },
+    { id: 3, title: 'Supplier Price Update', desc: 'Mandovi Building Solutions updated UltraTech cement bag pricing.', time: '1d ago', unread: false }
+  ]);
+
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const markAllRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, unread: false })));
   };
 
-  const currentRoleInfo = roleConfig[role];
-  const IconComponent = currentRoleInfo.icon;
+  const roleConfig = {
+    customer: { label: 'Property Owner', badge: 'bg-blue-100 text-blue-800 border-blue-200', icon: Home },
+    professional: { label: 'Contractor / Pro', badge: 'bg-amber-100 text-amber-900 border-amber-200', icon: HardHat },
+    supplier: { label: 'Material Supplier', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Truck }
+  };
 
   const handleRoleSwitch = (newRole: UserRole) => {
     switchRole(newRole);
-    setDropdownOpen(false);
+    setProfileDropdownOpen(false);
   };
 
   return (
@@ -40,7 +43,7 @@ export const Navbar: React.FC = () => {
           
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <a href="/" className="flex items-center gap-2.5 group">
+            <Link to="/" className="flex items-center gap-2.5 group">
               <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-amber-400 shadow-md group-hover:scale-105 transition-transform">
                 <Building2 className="w-6 h-6" />
               </div>
@@ -51,107 +54,234 @@ export const Navbar: React.FC = () => {
                 </span>
                 <span className="block text-[10px] text-slate-500 tracking-wider uppercase font-medium">AI Construction Marketplace</span>
               </div>
-            </a>
+            </Link>
           </div>
 
-          {/* Center Navigation Links */}
+          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#professionals" className="hover:text-amber-600 transition-colors">Find Professionals</a>
-            <a href="#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5">
+            <a href="/#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
             </a>
-            <a href="#materials" className="hover:text-amber-600 transition-colors">Materials Marketplace</a>
-            <a href="#how-it-works" className="hover:text-amber-600 transition-colors">How It Works</a>
+            <a href="/#materials" className="hover:text-amber-600 transition-colors">Materials Marketplace</a>
+            <a href="/#how-it-works" className="hover:text-amber-600 transition-colors">How It Works</a>
           </nav>
 
-          {/* Right Action: Active User Persona & Registration */}
+          {/* Right Action: Notifications & Profile Box */}
           <div className="flex items-center gap-3">
             
-            {/* Active User Persona Pill & Quick Switcher */}
+            {/* Notification Bell */}
             <div className="relative">
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold shadow-xs transition-all cursor-pointer ${currentRoleInfo.badgeClass}`}
+                onClick={() => {
+                  setNotificationsOpen(!notificationsOpen);
+                  setProfileDropdownOpen(false);
+                }}
+                className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Notifications"
               >
-                <IconComponent className="w-3.5 h-3.5" />
-                <span>{currentUser ? currentUser.fullName : 'Guest'}</span>
-                <span className="text-[10px] opacity-75">({currentRoleInfo.label})</span>
-                <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
+                )}
               </button>
 
-              {/* Role Dropdown */}
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-3 py-1.5 border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                    Switch Active Persona (No Login Needed)
+              {/* Notification Dropdown */}
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                    <span className="font-bold text-xs text-slate-900 uppercase tracking-wider">
+                      Notifications ({unreadCount} new)
+                    </span>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={markAllRead}
+                        className="text-[11px] font-semibold text-amber-600 hover:underline cursor-pointer"
+                      >
+                        Mark all read
+                      </button>
+                    )}
                   </div>
 
-                  <button
-                    onClick={() => handleRoleSwitch('customer')}
-                    className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-slate-50 cursor-pointer ${role === 'customer' ? 'font-bold text-blue-600 bg-blue-50/50' : 'text-slate-700'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Home className="w-3.5 h-3.5 text-blue-600" />
-                      <div>
-                        <div>Rahul Naik (Customer)</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Property Owner, Margao</div>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                    {notifications.map((n) => (
+                      <div 
+                        key={n.id} 
+                        className={`p-3 rounded-xl text-xs transition-colors ${n.unread ? 'bg-amber-50/70 border border-amber-100' : 'bg-slate-50'}`}
+                      >
+                        <div className="flex items-center justify-between font-bold text-slate-900 mb-0.5">
+                          <span>{n.title}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{n.time}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">{n.desc}</p>
                       </div>
-                    </div>
-                    {role === 'customer' && <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>}
-                  </button>
-
-                  <button
-                    onClick={() => handleRoleSwitch('professional')}
-                    className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-slate-50 cursor-pointer ${role === 'professional' ? 'font-bold text-amber-600 bg-amber-50/50' : 'text-slate-700'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <HardHat className="w-3.5 h-3.5 text-amber-600" />
-                      <div>
-                        <div>Carlos Fernandes (Contractor)</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Civil Contractor, Panaji</div>
-                      </div>
-                    </div>
-                    {role === 'professional' && <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>}
-                  </button>
-
-                  <button
-                    onClick={() => handleRoleSwitch('supplier')}
-                    className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-slate-50 cursor-pointer ${role === 'supplier' ? 'font-bold text-emerald-600 bg-emerald-50/50' : 'text-slate-700'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-3.5 h-3.5 text-emerald-600" />
-                      <div>
-                        <div>Sunil Silva (Supplier)</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Mandovi Building Supplies</div>
-                      </div>
-                    </div>
-                    {role === 'supplier' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
-                  </button>
-
-                  {role === 'professional' && currentUser?.leadCredits !== undefined && (
-                    <div className="mt-1 mx-2 p-2 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 flex items-center justify-between">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Coins className="w-3.5 h-3.5 text-amber-600" /> Lead Balance:
-                      </span>
-                      <span className="font-bold">{currentUser.leadCredits} Credits</span>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Register New User Button */}
-            <button
-              onClick={() => {
-                setSelectedRoleForModal('customer');
-                setOpenRegisterModal(true);
-              }}
-              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
-            >
-              <UserPlus className="w-3.5 h-3.5 text-amber-400" />
-              <span>Register Profile</span>
-            </button>
+            {/* THE "PROFILE" BOX BUTTON */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setProfileDropdownOpen(!profileDropdownOpen);
+                  setNotificationsOpen(false);
+                }}
+                className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-2xl border-2 border-slate-200 hover:border-slate-300 bg-white shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-bold text-xs shadow-xs">
+                  {currentUser?.fullName.charAt(0) || 'U'}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <div className="text-xs font-bold text-slate-900 leading-tight flex items-center gap-1">
+                    <span>{currentUser ? currentUser.fullName : 'My Profile'}</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-none mt-0.5 capitalize">
+                    {roleConfig[role].label}
+                  </div>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+              </button>
+
+              {/* Comprehensive Profile Dropdown Menu */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 text-xs animate-in fade-in slide-in-from-top-2">
+                  
+                  {/* Current Active Persona Summary */}
+                  <div className="pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleConfig[role].badge}`}>
+                        Active Profile: {roleConfig[role].label}
+                      </span>
+                    </div>
+                    <div className="text-sm font-black text-slate-900">{currentUser?.fullName}</div>
+                    <div className="text-[11px] text-slate-500">{currentUser?.email}</div>
+                  </div>
+
+                  {/* Profile Management Actions */}
+                  <div className="py-3 border-b border-slate-100 space-y-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-2">
+                      Profile Management
+                    </div>
+
+                    {/* View Public Profile */}
+                    {role === 'professional' ? (
+                      <Link
+                        to="/professionals/prof-carlos-1"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-slate-50 text-slate-700 font-semibold transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-amber-500" />
+                          <span>View Public Profile & Portfolio</span>
+                        </span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                      </Link>
+                    ) : role === 'supplier' ? (
+                      <Link
+                        to="/suppliers/supp-mandovi-1"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-slate-50 text-slate-700 font-semibold transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-emerald-500" />
+                          <span>View Supplier Catalogue</span>
+                        </span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                      </Link>
+                    ) : (
+                      <div className="px-2.5 py-1.5 text-[11px] text-slate-500">
+                        Customer Account: {currentUser?.defaultLocation || 'Goa'}
+                      </div>
+                    )}
+
+                    {/* Edit / Build Professional Profile */}
+                    <Link
+                      to="/professionals/new"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-slate-50 text-slate-700 font-semibold transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Edit3 className="w-4 h-4 text-blue-500" />
+                        <span>Edit / Build Profile Wizard</span>
+                      </span>
+                      <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">5 Steps</span>
+                    </Link>
+
+                    {/* Admin Verification Queue */}
+                    <Link
+                      to="/admin/verifications"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-slate-50 text-slate-700 font-semibold transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                        <span>Verification Submissions & Badges</span>
+                      </span>
+                    </Link>
+                  </div>
+
+                  {/* Switch Persona (Customer vs Professional vs Supplier) */}
+                  <div className="pt-3">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 flex items-center justify-between">
+                      <span>Switch Active User Mode</span>
+                      <span className="text-[9px] text-emerald-600 font-normal">Zero-Auth</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => handleRoleSwitch('customer')}
+                        className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${role === 'customer' ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Home className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Customer: Rahul Naik (Owner)</span>
+                        </div>
+                        {role === 'customer' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                      </button>
+
+                      <button
+                        onClick={() => handleRoleSwitch('professional')}
+                        className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${role === 'professional' ? 'bg-amber-50 text-amber-800 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <HardHat className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Professional: Carlos Fernandes</span>
+                        </div>
+                        {role === 'professional' && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                      </button>
+
+                      <button
+                        onClick={() => handleRoleSwitch('supplier')}
+                        className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${role === 'supplier' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Supplier: Mandovi Building Supplies</span>
+                        </div>
+                        {role === 'supplier' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                      </button>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          setSelectedRoleForModal('professional');
+                          setOpenRegisterModal(true);
+                          setProfileDropdownOpen(false);
+                        }}
+                        className="text-[11px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Register Brand New Profile
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
 
           </div>
 

@@ -34,6 +34,8 @@ export interface UserProfile {
   reviewCount?: number;
   leadCredits?: number;
   isAvailable?: boolean;
+  subscriptionTier?: 'free' | 'pro' | 'premium';
+  isSponsored?: boolean;
 
   // Supplier specific
   businessName?: string;

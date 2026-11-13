@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+
 from app.config import settings
+from app.routers import professionals, suppliers, admin, media
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -17,6 +21,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Static files for local uploads fallback
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/api/v1/media/files", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+
+# Include Routers
+app.include_router(professionals.router, prefix=settings.API_PREFIX)
+app.include_router(suppliers.router, prefix=settings.API_PREFIX)
+app.include_router(admin.router, prefix=settings.API_PREFIX)
+app.include_router(media.router, prefix=settings.API_PREFIX)
+
 @app.get("/")
 def root():
     return {
@@ -32,4 +46,3 @@ def health_check():
         "status": "healthy",
         "timestamp": "ok"
     }
-
