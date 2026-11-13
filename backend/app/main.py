@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.config import settings
-from app.routers import professionals, suppliers, customers, admin, media
+from app.routers import professionals, suppliers, customers, admin, media, estimator
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -31,6 +31,7 @@ app.include_router(suppliers.router, prefix=settings.API_PREFIX)
 app.include_router(customers.router, prefix=settings.API_PREFIX)
 app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(media.router, prefix=settings.API_PREFIX)
+app.include_router(estimator.router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 def root():

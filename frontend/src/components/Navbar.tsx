@@ -73,10 +73,10 @@ export const Navbar: React.FC = () => {
               <Truck className="w-4 h-4 text-emerald-600" />
               <span>Supplier Marketplace</span>
             </Link>
-            <a href="/#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5 text-xs">
+            <Link to="/cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
-            </a>
+            </Link>
             <a href="/#how-it-works" className="hover:text-amber-600 transition-colors text-xs">How It Works</a>
           </nav>
 
