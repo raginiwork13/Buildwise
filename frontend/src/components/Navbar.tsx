@@ -59,10 +59,10 @@ export const Navbar: React.FC = () => {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="/#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5">
+            <Link to="/cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
-            </a>
+            </Link>
             <a href="/#materials" className="hover:text-amber-600 transition-colors">Materials Marketplace</a>
             <a href="/#how-it-works" className="hover:text-amber-600 transition-colors">How It Works</a>
           </nav>

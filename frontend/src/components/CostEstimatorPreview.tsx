@@ -1,36 +1,97 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { Sparkles, TrendingUp, CheckCircle, Info, ArrowRight } from 'lucide-react';
+import type { GoaLocation, ProjectType, ConstructionType, FoundationType, MaterialQuality, FinishingQuality } from '../pages/CostEstimatorPage';
 
 export const CostEstimatorPreview: React.FC = () => {
   const { setOpenRegisterModal, setSelectedRoleForModal } = useUser();
 
-  const [areaSqft, setAreaSqft] = useState(2200);
-  const [district, setDistrict] = useState<'North Goa' | 'South Goa'>('North Goa');
-  const [floors, setFloors] = useState(2);
-  const [finishTier, setFinishTier] = useState<'economy' | 'standard' | 'premium' | 'luxury'>('standard');
+  const [location, setLocation] = useState<GoaLocation>('Panaji');
+  const [state] = useState<string>('Goa');
+  const [projectType, setProjectType] = useState<ProjectType>('Residential');
+  const [areaSqft, setAreaSqft] = useState<number>(2000);
+  const [numberOfFloors, setNumberOfFloors] = useState<number>(2);
+  const [constructionType, setConstructionType] = useState<ConstructionType>('RCC Frame');
+  const [foundationType, setFoundationType] = useState<FoundationType>('Isolated');
+  const [materialQuality, setMaterialQuality] = useState<MaterialQuality>('Standard');
+  const [finishingQuality, setFinishingQuality] = useState<FinishingQuality>('Medium');
+  const [constructionYear] = useState<number>(2026);
 
-  const tierRates = {
-    economy: 1750,
-    standard: 2150,
-    premium: 2750,
-    luxury: 3600
+  // Micro-market location multiplier
+  const locationMultipliers: Record<GoaLocation, number> = {
+    Panaji: 1.06,
+    Margao: 1.02,
+    Vasco: 1.02,
+    Mapusa: 1.04,
+    Ponda: 1.00,
+    Calangute: 1.08,
+    Bicholim: 0.97,
+    Pernem: 1.03,
+    Canacona: 1.05,
+    Quepem: 0.98
   };
 
-  const districtMultiplier = district === 'North Goa' ? 1.05 : 1.0;
-  const floorMultiplier = floors === 1 ? 1.0 : floors === 2 ? 1.03 : 1.07;
+  const projectMultipliers: Record<ProjectType, number> = {
+    Residential: 1.0,
+    Commercial: 1.15,
+    Renovation: 0.70
+  };
 
-  const ratePerSqft = Math.round(tierRates[finishTier] * districtMultiplier * floorMultiplier);
-  const totalCost = areaSqft * ratePerSqft;
+  const constructionMultipliers: Record<ConstructionType, number> = {
+    'RCC Frame': 1.0,
+    'Steel Frame': 1.08,
+    'Load Bearing': 0.88
+  };
+
+  const foundationMultipliers: Record<FoundationType, number> = {
+    Isolated: 1.0,
+    Combined: 1.06,
+    Raft: 1.14
+  };
+
+  const materialMultipliers: Record<MaterialQuality, number> = {
+    Economy: 0.85,
+    Standard: 1.0,
+    Premium: 1.25
+  };
+
+  const finishingMultipliers: Record<FinishingQuality, number> = {
+    Basic: 0.90,
+    Medium: 1.05,
+    High: 1.30
+  };
+
+  const safeFloors = Math.max(1, numberOfFloors || 1);
+  const floorMultiplier = safeFloors === 1 ? 1.0 : safeFloors === 2 ? 1.03 : safeFloors === 3 ? 1.07 : 1.0 + (safeFloors - 1) * 0.04;
+
+  const ratePerSqft = Math.round(
+    2000 *
+    projectMultipliers[projectType] *
+    constructionMultipliers[constructionType] *
+    foundationMultipliers[foundationType] *
+    materialMultipliers[materialQuality] *
+    finishingMultipliers[finishingQuality] *
+    locationMultipliers[location] *
+    floorMultiplier
+  );
+
+  const safeArea = Math.max(100, areaSqft || 100);
+  const totalCost = Math.round(safeArea * ratePerSqft);
   const totalCostLakhs = (totalCost / 100000).toFixed(2);
   const minRangeLakhs = ((totalCost * 0.94) / 100000).toFixed(2);
   const maxRangeLakhs = ((totalCost * 1.06) / 100000).toFixed(2);
 
-  const civilCost = Math.round(totalCost * 0.48);
+  const civilCost = Math.round(totalCost * 0.46);
   const materialsCost = Math.round(totalCost * 0.24);
   const labourCost = Math.round(totalCost * 0.15);
   const mepCost = Math.round(totalCost * 0.08);
-  const finishingCost = Math.round(totalCost * 0.05);
+  const finishingCost = Math.round(totalCost * 0.07);
+
+  const locationOptions: GoaLocation[] = [
+    'Panaji', 'Margao', 'Vasco', 'Mapusa', 'Ponda', 
+    'Calangute', 'Bicholim', 'Pernem', 'Canacona', 'Quepem'
+  ];
 
   return (
     <section id="cost-estimator" className="py-16 sm:py-24 bg-slate-900 text-white relative overflow-hidden">
@@ -39,127 +100,186 @@ export const CostEstimatorPreview: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="text-center max-w-3xl mx-auto mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30">
-            <Sparkles className="w-3.5 h-3.5" /> High Priority AI Feature · Feature 12 & 17
+            <Sparkles className="w-3.5 h-3.5" /> High Precision Structural Regressor · Goa {constructionYear}
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-3">
             AI Construction Cost Estimator
           </h2>
           <p className="text-slate-400 mt-3 text-sm sm:text-base">
-            Trained on historical Goa building data. Realistically calculate your approximate construction expenditure by area, finish tier, and location before consulting a contractor.
+            Trained on historical Goa building data. Realistically calculate your approximate construction expenditure by area, structural parameters, and location.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto">
           {/* Left Column: Input Controls */}
-          <div className="lg:col-span-6 bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-slate-700 space-y-6">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Built-up Area (Sq. Ft)
+          <div className="lg:col-span-6 bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-slate-700 space-y-4">
+            
+            {/* Location & State */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Location (Goa)
                 </label>
-                <span className="text-sm font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
-                  {areaSqft.toLocaleString()} sq.ft
-                </span>
+                <select
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value as GoaLocation)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-medium cursor-pointer"
+                >
+                  {locationOptions.map((loc) => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
               </div>
-              <input
-                type="range"
-                min="800"
-                max="5000"
-                step="100"
-                value={areaSqft}
-                onChange={(e) => setAreaSqft(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-              />
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                <span>800 sq.ft (Compact Villa)</span>
-                <span>2,500 sq.ft</span>
-                <span>5,000 sq.ft (Luxury Estate)</span>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  State
+                </label>
+                <input
+                  type="text"
+                  value={state}
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-400 text-xs font-semibold cursor-not-allowed"
+                />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Location in Goa
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setDistrict('North Goa')}
-                  className={`py-2.5 px-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                    district === 'North Goa'
-                      ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold'
-                      : 'bg-slate-900/60 text-slate-300 border-slate-700 hover:border-slate-600'
-                  }`}
+            {/* Project Type & Area */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Project Type
+                </label>
+                <select
+                  value={projectType}
+                  onChange={(e) => setProjectType(e.target.value as ProjectType)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-medium cursor-pointer"
                 >
-                  North Goa (Panaji / Mapusa)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDistrict('South Goa')}
-                  className={`py-2.5 px-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                    district === 'South Goa'
-                      ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold'
-                      : 'bg-slate-900/60 text-slate-300 border-slate-700 hover:border-slate-600'
-                  }`}
-                >
-                  South Goa (Margao / Vasco)
-                </button>
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Renovation">Renovation</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Area (Sq. Ft.)
+                </label>
+                <input
+                  type="number"
+                  min="300"
+                  max="50000"
+                  step="50"
+                  value={areaSqft || ''}
+                  onChange={(e) => setAreaSqft(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold focus:border-amber-500"
+                />
               </div>
             </div>
 
+            {/* Number of Floors & Construction Type */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Floors
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={numberOfFloors || ''}
+                  onChange={(e) => setNumberOfFloors(Math.max(1, Number(e.target.value)))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Construction Type
+                </label>
+                <select
+                  value={constructionType}
+                  onChange={(e) => setConstructionType(e.target.value as ConstructionType)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-medium cursor-pointer"
+                >
+                  <option value="RCC Frame">RCC Frame</option>
+                  <option value="Steel Frame">Steel Frame</option>
+                  <option value="Load Bearing">Load Bearing</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Foundation Type & Material Quality */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Foundation Type
+                </label>
+                <select
+                  value={foundationType}
+                  onChange={(e) => setFoundationType(e.target.value as FoundationType)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-medium cursor-pointer"
+                >
+                  <option value="Isolated">Isolated</option>
+                  <option value="Combined">Combined</option>
+                  <option value="Raft">Raft</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                  Material Quality
+                </label>
+                <select
+                  value={materialQuality}
+                  onChange={(e) => setMaterialQuality(e.target.value as MaterialQuality)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-medium cursor-pointer"
+                >
+                  <option value="Economy">Economy</option>
+                  <option value="Standard">Standard</option>
+                  <option value="Premium">Premium</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Finishing Quality */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Number of Floors
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                Finishing Quality
               </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3].map((f) => (
+              <div className="grid grid-cols-3 gap-2">
+                {(['Basic', 'Medium', 'High'] as const).map((f) => (
                   <button
                     key={f}
                     type="button"
-                    onClick={() => setFloors(f)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                      floors === f
+                    onClick={() => setFinishingQuality(f)}
+                    className={`py-2 px-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                      finishingQuality === f
                         ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold'
                         : 'bg-slate-900/60 text-slate-300 border-slate-700 hover:border-slate-600'
                     }`}
                   >
-                    {f} {f === 1 ? 'Floor (G)' : 'Floors'}
+                    {f}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Finishing & Material Tier
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {(['economy', 'standard', 'premium', 'luxury'] as const).map((tier) => (
-                  <button
-                    key={tier}
-                    type="button"
-                    onClick={() => setFinishTier(tier)}
-                    className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
-                      finishTier === tier
-                        ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
-                        : 'bg-slate-900/60 text-slate-300 border-slate-700 hover:border-slate-600'
-                    }`}
-                  >
-                    <div className="font-bold text-xs capitalize">{tier}</div>
-                    <div className={`text-[10px] ${finishTier === tier ? 'text-slate-900' : 'text-slate-400'}`}>
-                      {tier === 'economy' && 'Basic vitrified, standard brick'}
-                      {tier === 'standard' && 'Branded cement, Teak doors'}
-                      {tier === 'premium' && 'Italian marble, UPVC, Hafele'}
-                      {tier === 'luxury' && 'Full smart home, pool, stone'}
-                    </div>
-                  </button>
-                ))}
-              </div>
+            {/* Link to Full Estimator Page */}
+            <div className="pt-2">
+              <Link
+                to="/cost-estimator"
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-600 transition-colors"
+              >
+                <span>Open Full Detailed Estimator & BOQ Calculator</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
 
           {/* Right Column: Live Prediction Output Card */}
-          <div className="lg:col-span-6 bg-gradient-to-b from-slate-800 to-slate-850 rounded-2xl p-6 sm:p-8 border border-slate-700 shadow-2xl space-y-6">
+          <div className="lg:col-span-6 bg-gradient-to-b from-slate-800 to-slate-850 rounded-2xl p-6 sm:p-8 border border-slate-700 shadow-2xl space-y-5">
             <div>
               <span className="text-xs uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5" /> Predicted Project Expenditure
@@ -177,22 +297,22 @@ export const CostEstimatorPreview: React.FC = () => {
 
             <div className="pt-4 border-t border-slate-700 space-y-3">
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Itemized Cost Breakdown
+                Itemized Cost Breakdown ({location}, Goa)
               </div>
 
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300">1. Structural & Civil Work (48%)</span>
+                  <span className="text-slate-300">1. Substructure & Civil Work (46%)</span>
                   <span className="font-bold text-white">₹{(civilCost / 100000).toFixed(2)} Lakhs</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '48%' }} />
+                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '46%' }} />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300">2. Raw Materials - Cement, Steel (24%)</span>
+                  <span className="text-slate-300">2. Raw Materials - {materialQuality} (24%)</span>
                   <span className="font-bold text-white">₹{(materialsCost / 100000).toFixed(2)} Lakhs</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
@@ -222,11 +342,11 @@ export const CostEstimatorPreview: React.FC = () => {
 
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300">5. Finishing & Misc Site Approvals (5%)</span>
+                  <span className="text-slate-300">5. {finishingQuality} Finishes & Approvals (7%)</span>
                   <span className="font-bold text-white">₹{(finishingCost / 100000).toFixed(2)} Lakhs</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-pink-500 rounded-full" style={{ width: '5%' }} />
+                  <div className="h-full bg-pink-500 rounded-full" style={{ width: '7%' }} />
                 </div>
               </div>
             </div>
