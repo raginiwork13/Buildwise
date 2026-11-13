@@ -32,6 +32,8 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     leadCredits: 120,
     isAvailable: true,
     isVerified: true,
+    subscriptionTier: 'premium',
+    isSponsored: true,
     bio: 'Specialists in Goan villas, RCC framed structures, and traditional Portuguese restorations across Goa.',
     createdAt: '2025-06-10'
   },

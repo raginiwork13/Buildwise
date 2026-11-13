@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import type { UserRole, ProfessionalCategory } from '../types';
-import { Home, HardHat, Truck, CheckCircle2, Sparkles, X, User } from 'lucide-react';
+import { Home, HardHat, Truck, CheckCircle2, Sparkles, X, User, Crown, Zap, Shield } from 'lucide-react';
 
 export const RegistrationModal: React.FC = () => {
   const { openRegisterModal, setOpenRegisterModal, registerUser, selectedRoleForModal, setSelectedRoleForModal, switchRole } = useUser();
@@ -24,6 +24,9 @@ export const RegistrationModal: React.FC = () => {
   // Customer fields
   const [defaultLocation, setDefaultLocation] = useState('Margao, Goa');
 
+  // Subscription plan selection
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('pro');
+
   if (!openRegisterModal) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,7 +45,9 @@ export const RegistrationModal: React.FC = () => {
       city,
       businessName: businessName || `${fullName} Building Materials`,
       warehouseLocation,
-      defaultLocation
+      defaultLocation,
+      subscriptionTier: selectedRoleForModal === 'professional' ? subscriptionTier : 'free',
+      isSponsored: selectedRoleForModal === 'professional' ? (subscriptionTier === 'premium' || subscriptionTier === 'pro') : false
     });
   };
 
@@ -284,6 +289,71 @@ export const RegistrationModal: React.FC = () => {
                   />
                 </div>
               </div>
+              {/* Membership Plan Selection for Professionals */}
+              <div className="pt-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>Choose Profile Plan & Placement</span>
+                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Amazon-Style Tiered Ranking
+                  </span>
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div
+                    onClick={() => setSubscriptionTier('free')}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all ${
+                      subscriptionTier === 'free'
+                        ? 'border-slate-800 bg-white ring-2 ring-slate-800/10'
+                        : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-800">Free</span>
+                      <Shield className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-900">₹0</div>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Standard listing ranked organically by rating & reviews.</p>
+                  </div>
+
+                  <div
+                    onClick={() => setSubscriptionTier('pro')}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all relative ${
+                      subscriptionTier === 'pro'
+                        ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-500/20'
+                        : 'border-slate-200 bg-slate-50/50 hover:border-amber-200'
+                    }`}
+                  >
+                    <span className="absolute -top-2 right-2 bg-amber-500 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
+                      Popular
+                    </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-amber-800">Pro</span>
+                      <Zap className="w-3.5 h-3.5 text-amber-600" />
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-900">₹299<span className="text-[10px] font-normal text-slate-500">/mo</span></div>
+                    <p className="text-[10px] text-slate-600 mt-1 leading-tight"><strong className="text-amber-700">SPONSORED</strong> badge, elevated search ranking.</p>
+                  </div>
+
+                  <div
+                    onClick={() => setSubscriptionTier('premium')}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all relative ${
+                      subscriptionTier === 'premium'
+                        ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20'
+                        : 'border-slate-200 bg-slate-50/50 hover:border-indigo-200'
+                    }`}
+                  >
+                    <span className="absolute -top-2 right-2 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
+                      Top #1
+                    </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-indigo-900">Premium</span>
+                      <Crown className="w-3.5 h-3.5 text-indigo-600" />
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-900">₹799<span className="text-[10px] font-normal text-slate-500">/mo</span></div>
+                    <p className="text-[10px] text-indigo-950 mt-1 leading-tight"><strong>TOP SPONSORED</strong> position on Home page search results.</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="text-[11px] text-emerald-700 bg-emerald-50 p-2 rounded-lg flex items-center gap-1.5 border border-emerald-200">
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                 <span>You will receive <strong>50 Free Lead Credits</strong> immediately to respond to project enquiries!</span>

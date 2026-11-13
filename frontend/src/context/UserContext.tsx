@@ -60,6 +60,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       warehouseLocation: 'Margao Industrial Estate',
       defaultLocation: 'Goa',
       projectsCount: 0,
+      subscriptionTier: userData.subscriptionTier || (userData.role === 'professional' ? 'pro' : 'free'),
+      isSponsored: userData.role === 'professional' ? (userData.subscriptionTier === 'premium' || userData.subscriptionTier === 'pro') : false,
       ...userData,
       fullName: userData.fullName,
       email: userData.email,
