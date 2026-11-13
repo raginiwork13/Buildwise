@@ -2,13 +2,21 @@ import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { 
   Building2, Sparkles, ChevronDown, User, Bell, Edit3, 
-  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus
+  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { UserRole } from '../types';
+import type { UserProfile } from '../types';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, role, switchRole, setOpenRegisterModal, setSelectedRoleForModal } = useUser();
+  const { 
+    currentUser, 
+    role, 
+    accounts, 
+    switchUser, 
+    setOpenRegisterModal, 
+    setSelectedRoleForModal, 
+    setOpenLoginModal 
+  } = useUser();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -31,8 +39,8 @@ export const Navbar: React.FC = () => {
     supplier: { label: 'Material Supplier', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Truck }
   };
 
-  const handleRoleSwitch = (newRole: UserRole) => {
-    switchRole(newRole);
+  const handleUserSelect = (account: UserProfile) => {
+    switchUser(account);
     setProfileDropdownOpen(false);
   };
 
@@ -58,20 +66,27 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-600">
+          <nav className="hidden md:flex items-center gap-3 text-sm font-medium text-slate-600">
             <Link 
               to="/professionals" 
-              className="text-slate-900 font-bold hover:text-amber-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200"
+              className="text-slate-900 font-bold hover:text-amber-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200 text-xs"
             >
-              <HardHat className="w-4 h-4 text-amber-600" />
+              <HardHat className="w-3.5 h-3.5 text-amber-600" />
               <span>Professional Marketplace</span>
             </Link>
             <Link 
               to="/suppliers" 
-              className="text-slate-900 font-bold hover:text-emerald-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200"
+              className="text-slate-900 font-bold hover:text-emerald-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200 text-xs"
             >
-              <Truck className="w-4 h-4 text-emerald-600" />
+              <Truck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Supplier Marketplace</span>
+            </Link>
+            <Link 
+              to="/projects" 
+              className="text-slate-900 font-bold hover:text-indigo-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 text-xs"
+            >
+              <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Projects</span>
             </Link>
             <Link to="/cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -83,6 +98,16 @@ export const Navbar: React.FC = () => {
           {/* Right Action: Notifications & Profile Box */}
           <div className="flex items-center gap-3">
             
+            {/* Quick Chat Link */}
+            <Link
+              to="/projects"
+              className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="Chat Messenger (OLX / WhatsApp style)"
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full" />
+            </Link>
+
             {/* Notification Bell */}
             <div className="relative">
               <button
@@ -240,54 +265,65 @@ export const Navbar: React.FC = () => {
                   <div className="pt-3">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 flex items-center justify-between">
                       <span>Switch Active User Mode</span>
-                      <span className="text-[9px] text-emerald-600 font-normal">Zero-Auth</span>
+                      <span className="text-[9px] text-emerald-600 font-normal">Dynamic Accounts</span>
                     </div>
 
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => handleRoleSwitch('customer')}
-                        className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${role === 'customer' ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Home className="w-3.5 h-3.5 text-blue-500" />
-                          <span>Customer: Rahul Naik (Owner)</span>
-                        </div>
-                        {role === 'customer' && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                      </button>
+                    <div className="space-y-1 max-h-52 overflow-y-auto pr-1">
+                      {accounts.map((acct) => {
+                        const isCurrent = currentUser?.email.toLowerCase() === acct.email.toLowerCase();
+                        const Icon = acct.role === 'professional' ? HardHat : acct.role === 'supplier' ? Truck : Home;
+                        const roleColor = 
+                          acct.role === 'professional' ? 'text-amber-500' :
+                          acct.role === 'supplier' ? 'text-emerald-500' :
+                          'text-blue-500';
 
-                      <button
-                        onClick={() => handleRoleSwitch('professional')}
-                        className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${role === 'professional' ? 'bg-amber-50 text-amber-800 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <HardHat className="w-3.5 h-3.5 text-amber-500" />
-                          <span>Professional: Carlos Fernandes</span>
-                        </div>
-                        {role === 'professional' && <Check className="w-3.5 h-3.5 text-amber-600" />}
-                      </button>
-
-                      <button
-                        onClick={() => handleRoleSwitch('supplier')}
-                        className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${role === 'supplier' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-600'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Truck className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Supplier: Mandovi Building Supplies</span>
-                        </div>
-                        {role === 'supplier' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                      </button>
+                        return (
+                          <button
+                            key={acct.email}
+                            onClick={() => handleUserSelect(acct)}
+                            className={`w-full px-2.5 py-2 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors ${
+                              isCurrent 
+                                ? 'bg-amber-50/80 text-slate-900 font-bold border border-amber-200' 
+                                : 'hover:bg-slate-50 text-slate-600 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <Icon className={`w-3.5 h-3.5 ${roleColor} shrink-0`} />
+                              <div className="truncate text-left">
+                                <div className="text-xs truncate leading-tight">
+                                  {acct.fullName}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-normal truncate capitalize">
+                                  {acct.role} • {acct.email}
+                                </div>
+                              </div>
+                            </div>
+                            {isCurrent && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0 ml-1" />}
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                       <button
                         onClick={() => {
-                          setSelectedRoleForModal('professional');
+                          setOpenLoginModal(true);
+                          setProfileDropdownOpen(false);
+                        }}
+                        className="text-[11px] font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                      >
+                        <LogIn className="w-3 h-3 text-indigo-600" /> Log In
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setSelectedRoleForModal('customer');
                           setOpenRegisterModal(true);
                           setProfileDropdownOpen(false);
                         }}
                         className="text-[11px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 cursor-pointer"
                       >
-                        <Plus className="w-3 h-3" /> Register Brand New Profile
+                        <Plus className="w-3 h-3" /> Register Profile
                       </button>
                     </div>
                   </div>

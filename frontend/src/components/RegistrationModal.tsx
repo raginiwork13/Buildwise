@@ -76,7 +76,7 @@ export const RegistrationModal: React.FC = () => {
           console.warn('Backend offline, registered in local session', err);
         }
 
-        registerUser({
+        await registerUser({
           role: 'customer',
           fullName,
           email,
@@ -87,6 +87,9 @@ export const RegistrationModal: React.FC = () => {
           subscriptionTier: 'free',
           isSponsored: false
         });
+
+        // Navigate directly to Projects page where all customer projects are displayed
+        navigate('/projects');
 
       } else if (selectedRoleForModal === 'supplier') {
         // Save Supplier Profile to Supabase & local state
@@ -121,7 +124,7 @@ export const RegistrationModal: React.FC = () => {
           console.warn('Backend offline, registered in local session', err);
         }
 
-        registerUser({
+        await registerUser({
           role: 'supplier',
           fullName: contactPersonName || fullName,
           email,
@@ -164,7 +167,7 @@ export const RegistrationModal: React.FC = () => {
           console.warn('Backend offline, registered in local session', err);
         }
 
-        registerUser({
+        await registerUser({
           role: 'professional',
           fullName,
           email,

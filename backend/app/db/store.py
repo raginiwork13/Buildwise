@@ -18,6 +18,7 @@ if settings.SUPABASE_URL and settings.SUPABASE_KEY and "your-project" not in set
 class InMemoryDB:
     def __init__(self):
         self.customer_profiles: Dict[str, Dict[str, Any]] = {}
+        self.customer_projects: Dict[str, Dict[str, Any]] = {}
         self.professional_profiles: Dict[str, Dict[str, Any]] = {}
         self.professional_services: Dict[str, Dict[str, Any]] = {}
         self.professional_locations: Dict[str, Dict[str, Any]] = {}
@@ -30,6 +31,10 @@ class InMemoryDB:
         self.product_media: Dict[str, Dict[str, Any]] = {}
         self.verification_submissions: Dict[str, Dict[str, Any]] = {}
         self.professional_reviews: Dict[str, Dict[str, Any]] = {}
+        self.project_quotations: Dict[str, Dict[str, Any]] = {}
+        self.project_interests: Dict[str, Dict[str, Any]] = {}
+        self.chat_messages: Dict[str, Dict[str, Any]] = {}
+        self.user_accounts: Dict[str, Dict[str, Any]] = {}
         self._seed_initial_data()
 
     def _seed_initial_data(self):
@@ -407,6 +412,252 @@ class InMemoryDB:
             "primary_image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=500&q=80",
             "created_at": datetime.now(),
             "updated_at": datetime.now()
+        }
+
+        # Seed Customer Projects
+        self.customer_projects["proj-c1"] = {
+            "id": "proj-c1",
+            "customer_id": "cust-rahul-1",
+            "customer_name": "Rahul Naik",
+            "customer_type": "Individual / Homeowner",
+            "title": "4BHK Contemporary Portuguese Villa with Swimming Pool",
+            "description": "Looking for an experienced turnkey contractor to build a 3,800 sq.ft villa with exposed laterite stone features, sloping clay tiled roof, double-height living room, and salt-water plunge pool. Architectural drawings and CRZ clearances already approved.",
+            "category": "new_residential",
+            "location_address": "Near St. Anthony Church, Badem Junction, Assagao",
+            "district": "North Goa",
+            "city": "Assagao",
+            "built_up_area_sqft": 3800.0,
+            "floors_count": 2,
+            "estimated_budget": 8500000.0,
+            "required_services": ["Turnkey Civil Execution", "RCC Framing", "Waterproofing", "Laterite Masonry"],
+            "preferred_timeline_months": 12,
+            "status": "receiving_enquiries",
+            "enquiries_count": 6,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        self.customer_projects["proj-c2"] = {
+            "id": "proj-c2",
+            "customer_id": "cust-savio-2",
+            "customer_name": "Dr. Savio Coutinho",
+            "customer_type": "Individual / Homeowner",
+            "title": "120-Year Heritage Indo-Portuguese Mansion Restoration",
+            "description": "Restoration of heritage ancestral mansion in Fontainhas Latin Quarter. Requires timber beam replacement, lime plaster re-pointing, mother-of-pearl oyster shell window refurbishment, and Portuguese roof tile replacement.",
+            "category": "renovation",
+            "location_address": "Rua 31 de Janeiro, Fontainhas, Panaji",
+            "district": "North Goa",
+            "city": "Panaji",
+            "built_up_area_sqft": 4500.0,
+            "floors_count": 2,
+            "estimated_budget": 4500000.0,
+            "required_services": ["Heritage Conservation", "Teakwood Structural Work", "Lime Wash", "Roof Overhaul"],
+            "preferred_timeline_months": 8,
+            "status": "receiving_enquiries",
+            "enquiries_count": 4,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        self.customer_projects["proj-c3"] = {
+            "id": "proj-c3",
+            "customer_id": "cust-hospitality-3",
+            "customer_name": "Coastal Hospitality LLP",
+            "customer_type": "Company / Organisation",
+            "title": "Boutique Beachfront Cafe & 8 Eco-Cottages",
+            "description": "Eco-friendly commercial hospitality project near Colva beach. Demands climate-responsive bamboo-composite structures, rammed earth walls, solar integration, and wastewater bio-digester setup.",
+            "category": "commercial",
+            "location_address": "Beach Road, 4th Cross, Colva",
+            "district": "South Goa",
+            "city": "Colva",
+            "built_up_area_sqft": 6200.0,
+            "floors_count": 1,
+            "estimated_budget": 12000000.0,
+            "required_services": ["Commercial Civil Works", "Eco Architecture", "MEP Engineering", "Bio STP"],
+            "preferred_timeline_months": 10,
+            "status": "receiving_enquiries",
+            "enquiries_count": 9,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        self.customer_projects["proj-c4"] = {
+            "id": "proj-c4",
+            "customer_id": "cust-ananya-4",
+            "customer_name": "Ananya Roy",
+            "customer_type": "Individual / Homeowner",
+            "title": "Modern Minimalist Penthouse Interior Architecture",
+            "description": "Complete interior design, modular kitchen with quartz countertop, false ceiling with cove lighting, and customized teak furniture for a sea-facing 3BHK penthouse.",
+            "category": "interior_design",
+            "location_address": "Dona Paula View Tower, Miramar Beach Road, Panaji",
+            "district": "North Goa",
+            "city": "Panaji",
+            "built_up_area_sqft": 2600.0,
+            "floors_count": 1,
+            "estimated_budget": 2800000.0,
+            "required_services": ["Interior Architecture", "Modular Kitchen", "Lighting Design", "False Ceiling"],
+            "preferred_timeline_months": 4,
+            "status": "receiving_enquiries",
+            "enquiries_count": 3,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        self.customer_projects["proj-c5"] = {
+            "id": "proj-c5",
+            "customer_id": "cust-sunita-5",
+            "customer_name": "Sunita Borkar",
+            "customer_type": "Individual / Homeowner",
+            "title": "Coastal RCC Structural Retrofitting & Saline Waterproofing",
+            "description": "Seismic retrofitting, anti-corrosion micro-concreting of beams, and saline waterproofing for a coastal residential building subjected to high monsoon winds and ocean salt air.",
+            "category": "structural_work",
+            "location_address": "Baina Beach Road, Mormugao, Vasco",
+            "district": "South Goa",
+            "city": "Vasco da Gama",
+            "built_up_area_sqft": 3200.0,
+            "floors_count": 3,
+            "estimated_budget": 1800000.0,
+            "required_services": ["Structural Audit", "Beam Jacketing", "Saline Waterproofing", "Epoxy Injection"],
+            "preferred_timeline_months": 3,
+            "status": "receiving_enquiries",
+            "enquiries_count": 5,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        # Seed Project Quotations
+        self.project_quotations["quot-1"] = {
+            "id": "quot-1",
+            "project_id": "proj-c1",
+            "project_title": "4BHK Contemporary Portuguese Villa with Swimming Pool",
+            "customer_id": "cust-rahul-1",
+            "customer_name": "Rahul Naik",
+            "provider_id": "prof-carlos-1",
+            "provider_name": "Carlos Fernandes",
+            "provider_role": "professional",
+            "provider_company": "Fernandes & Sons Civil Construction",
+            "total_estimated_price": 8150000.0,
+            "material_costs": 4900000.0,
+            "labour_costs": 2400000.0,
+            "transport_charges": 250000.0,
+            "service_charges": 600000.0,
+            "expected_completion_time": "11 Months",
+            "payment_milestones": "15% Advance on site handover, 25% Plinth completion, 30% RCC Slab casting, 20% Masonry & Plastering, 10% Final handover",
+            "materials_included": "UltraTech PPC Cement, Tata Tiscon 550D TMT Steel, Local Laterite Stone blocks, Dr. Fixit Damp-proof coating",
+            "materials_excluded": "Sanitary fixtures, Italian marble/vitrified tiles (client supplied)",
+            "terms_and_conditions": "Rates valid for 30 days. PWD Class-1 execution standards with 5-year structural warranty.",
+            "quotation_validity_days": 30,
+            "status": "submitted",
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        self.project_quotations["quot-2"] = {
+            "id": "quot-2",
+            "project_id": "proj-c1",
+            "project_title": "4BHK Contemporary Portuguese Villa with Swimming Pool",
+            "customer_id": "cust-rahul-1",
+            "customer_name": "Rahul Naik",
+            "provider_id": "prof-ananya-2",
+            "provider_name": "Ar. Ananya Deshmukh",
+            "provider_role": "professional",
+            "provider_company": "Atelier Goa Architecture",
+            "total_estimated_price": 680000.0,
+            "material_costs": 0.0,
+            "labour_costs": 480000.0,
+            "transport_charges": 20000.0,
+            "service_charges": 180000.0,
+            "expected_completion_time": "3 Months for Detailed Drawings & CRZ Liasoning",
+            "payment_milestones": "30% Concept Masterplan, 40% Municipal/CRZ Drawings, 30% Site Supervision Milestone checks",
+            "materials_included": "Complete Architectural, Structural & MEP CAD/BIM blueprints with 3D walkthroughs",
+            "materials_excluded": "Municipal council scrutiny fees (paid directly to govt)",
+            "terms_and_conditions": "Includes 12 scheduled site inspection visits during crucial casting phases.",
+            "quotation_validity_days": 45,
+            "status": "submitted",
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        self.project_quotations["quot-3"] = {
+            "id": "quot-3",
+            "project_id": "proj-c1",
+            "project_title": "4BHK Contemporary Portuguese Villa with Swimming Pool",
+            "customer_id": "cust-rahul-1",
+            "customer_name": "Rahul Naik",
+            "provider_id": "supp-mandovi-1",
+            "provider_name": "Sunil Silva",
+            "provider_role": "supplier",
+            "provider_company": "Mandovi Building Solutions & Steel Yard",
+            "total_estimated_price": 1450000.0,
+            "material_costs": 1380000.0,
+            "labour_costs": 0.0,
+            "transport_charges": 70000.0,
+            "service_charges": 0.0,
+            "expected_completion_time": "Immediate staged deliveries across 8 months",
+            "payment_milestones": "30% against Proforma Invoice, 70% staggered upon delivery per truckload",
+            "materials_included": "1,200 Bags UltraTech Weather Plus Cement, 18 Metric Tons Tata Tiscon 550D Rebar, 8,000 Goan Laterite stones",
+            "materials_excluded": "Unloading crane fees if site access is restricted",
+            "terms_and_conditions": "Price locked against market price fluctuations for 60 days.",
+            "quotation_validity_days": 60,
+            "status": "submitted",
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+        # Seed Chat Messages
+        # (Cleaned - users chat dynamically in real time without static preset messages)
+        # Seed User Accounts for Multi-Account Switcher & Login
+        self.user_accounts["rahul.naik@example.com"] = {
+            "id": "demo-cust-1",
+            "email": "rahul.naik@example.com",
+            "password_hash": "pass123",
+            "full_name": "Rahul Naik",
+            "role": "customer",
+            "phone": "+91 98221 45091",
+            "default_location": "Margao, South Goa",
+            "city": "Margao",
+            "district": "South Goa",
+            "subscription_tier": "free",
+            "is_sponsored": False,
+            "is_verified": True,
+            "created_at": datetime.now(),
+            "last_login_at": datetime.now()
+        }
+
+        self.user_accounts["carlos@fernandesconstruct.in"] = {
+            "id": "demo-prof-1",
+            "email": "carlos@fernandesconstruct.in",
+            "password_hash": "pass123",
+            "full_name": "Carlos Fernandes",
+            "role": "professional",
+            "phone": "+91 94220 88210",
+            "company_name": "Fernandes & Sons Civil Construction",
+            "professional_category": "contractor",
+            "city": "Panaji",
+            "district": "North Goa",
+            "subscription_tier": "premium",
+            "is_sponsored": True,
+            "is_verified": True,
+            "created_at": datetime.now(),
+            "last_login_at": datetime.now()
+        }
+
+        self.user_accounts["mandovi.supplies@gmail.com"] = {
+            "id": "demo-supp-1",
+            "email": "mandovi.supplies@gmail.com",
+            "password_hash": "pass123",
+            "full_name": "Sunil Silva",
+            "role": "supplier",
+            "phone": "+91 98900 12345",
+            "business_name": "Mandovi Building Solutions & Steel Yard",
+            "city": "Verna",
+            "district": "South Goa",
+            "warehouse_location": "Verna Industrial Estate, South Goa",
+            "subscription_tier": "premium",
+            "is_sponsored": True,
+            "is_verified": True,
+            "created_at": datetime.now(),
+            "last_login_at": datetime.now()
         }
 
 db = InMemoryDB()

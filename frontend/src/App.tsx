@@ -10,6 +10,7 @@ import { SupplierShowcase } from './components/SupplierShowcase';
 import { HowItWorks } from './components/HowItWorks';
 import { Footer } from './components/Footer';
 import { RegistrationModal } from './components/RegistrationModal';
+import { LoginModal } from './components/LoginModal';
 
 import { CreateProfessionalProfile } from './pages/professional/CreateProfile';
 import { PublicProfessionalProfile } from './pages/professional/PublicProfile';
@@ -17,6 +18,7 @@ import { ProfessionalMarketplacePage } from './pages/professional/ProfessionalMa
 import { CreateSupplierProfile } from './pages/supplier/CreateSupplierProfile';
 import { SupplierMarketplacePage } from './pages/supplier/SupplierMarketplacePage';
 import { PublicSupplierProfile } from './pages/supplier/PublicSupplierProfile';
+import { CustomerProjectsPage } from './pages/customer/CustomerProjectsPage';
 import { VerificationManagement } from './pages/admin/VerificationManagement';
 import { CostEstimatorPage } from './pages/CostEstimatorPage';
 
@@ -55,6 +57,7 @@ export const AppContent: React.FC = () => {
           <Route path="/professionals" element={<ProfessionalMarketplacePage />} />
           <Route path="/professionals/new" element={<CreateProfessionalProfile />} />
           <Route path="/professionals/:id" element={<PublicProfessionalProfile />} />
+          <Route path="/projects" element={<CustomerProjectsPage />} />
           <Route path="/suppliers" element={<SupplierMarketplacePage />} />
           <Route path="/suppliers/new" element={<CreateSupplierProfile />} />
           <Route path="/suppliers/:id" element={<PublicSupplierProfile />} />
@@ -64,6 +67,7 @@ export const AppContent: React.FC = () => {
 
       <Footer />
       <RegistrationModal />
+      <LoginModal />
     </div>
   );
 };
