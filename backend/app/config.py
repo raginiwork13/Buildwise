@@ -1,8 +1,25 @@
 import os
+from pathlib import Path
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-load_dotenv()
+# Search for .env in current working dir, backend dir, or parent dirs
+current_dir = Path(__file__).resolve().parent
+backend_dir = current_dir.parent
+root_dir = backend_dir.parent
+
+env_paths = [
+    Path.cwd() / ".env",
+    backend_dir / ".env",
+    root_dir / ".env"
+]
+
+for p in env_paths:
+    if p.exists():
+        load_dotenv(p)
+        break
+else:
+    load_dotenv()
 
 class Settings(BaseModel):
     APP_NAME: str = "BuildWise API"

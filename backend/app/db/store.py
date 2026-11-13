@@ -17,6 +17,7 @@ if settings.SUPABASE_URL and settings.SUPABASE_KEY and "your-project" not in set
 # In-memory store with seeded initial demonstration data
 class InMemoryDB:
     def __init__(self):
+        self.customer_profiles: Dict[str, Dict[str, Any]] = {}
         self.professional_profiles: Dict[str, Dict[str, Any]] = {}
         self.professional_services: Dict[str, Dict[str, Any]] = {}
         self.professional_locations: Dict[str, Dict[str, Any]] = {}

@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.config import settings
-from app.routers import professionals, suppliers, admin, media
+from app.routers import professionals, suppliers, customers, admin, media
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -28,6 +28,7 @@ app.mount("/api/v1/media/files", StaticFiles(directory=settings.UPLOAD_DIR), nam
 # Include Routers
 app.include_router(professionals.router, prefix=settings.API_PREFIX)
 app.include_router(suppliers.router, prefix=settings.API_PREFIX)
+app.include_router(customers.router, prefix=settings.API_PREFIX)
 app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(media.router, prefix=settings.API_PREFIX)
 

@@ -58,13 +58,26 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="/#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5">
+          <nav className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-600">
+            <Link 
+              to="/professionals" 
+              className="text-slate-900 font-bold hover:text-amber-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200"
+            >
+              <HardHat className="w-4 h-4 text-amber-600" />
+              <span>Professional Marketplace</span>
+            </Link>
+            <Link 
+              to="/suppliers" 
+              className="text-slate-900 font-bold hover:text-emerald-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200"
+            >
+              <Truck className="w-4 h-4 text-emerald-600" />
+              <span>Supplier Marketplace</span>
+            </Link>
+            <a href="/#cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5 text-xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
             </a>
-            <a href="/#materials" className="hover:text-amber-600 transition-colors">Materials Marketplace</a>
-            <a href="/#how-it-works" className="hover:text-amber-600 transition-colors">How It Works</a>
+            <a href="/#how-it-works" className="hover:text-amber-600 transition-colors text-xs">How It Works</a>
           </nav>
 
           {/* Right Action: Notifications & Profile Box */}
