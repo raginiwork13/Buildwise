@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, CheckCheck, FolderKanban, HardHat, Truck, User, Lock, Crown } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
@@ -111,7 +112,7 @@ export const OlxChatDrawer: React.FC<OlxChatDrawerProps> = ({ isOpen, onClose, i
 
     const convId = generateConvId(currentUserName, activeTarget.recipientName);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/chat/messages?conversation_id=${encodeURIComponent(convId)}`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/chat/messages?conversation_id=${encodeURIComponent(convId)}`);
       if (res.ok) {
         const data: MessageItem[] = await res.json();
         setMessages(data);
@@ -187,7 +188,7 @@ export const OlxChatDrawer: React.FC<OlxChatDrawerProps> = ({ isOpen, onClose, i
 
     // Send to backend / Supabase
     try {
-      await fetch('http://localhost:8000/api/v1/chat/messages', {
+      await fetch(`${API_BASE_URL}/api/v1/chat/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(msgPayload)

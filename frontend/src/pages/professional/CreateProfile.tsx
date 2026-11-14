@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -86,7 +87,7 @@ export const CreateProfessionalProfile: React.FC = () => {
   const handleSaveAndPublish = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/professionals', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/professionals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +101,7 @@ export const CreateProfessionalProfile: React.FC = () => {
       if (res.ok) {
         const created = await res.json();
         for (const proj of portfolioProjects) {
-          await fetch(`http://localhost:8000/api/v1/professionals/${created.id}/portfolio`, {
+          await fetch(`${API_BASE_URL}/api/v1/professionals/${created.id}/portfolio`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(proj)

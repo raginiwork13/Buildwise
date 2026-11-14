@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { 
   X, Package, Truck, Clock, CheckCircle2, AlertCircle, 
@@ -71,7 +72,7 @@ export const ViewOrdersModal: React.FC<ViewOrdersModalProps> = ({ isOpen, onClos
       if (businessName) params.append('business_name', businessName);
       if (role) params.append('role', role);
 
-      const res = await fetch(`http://localhost:8000/api/v1/orders?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/orders?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
@@ -108,7 +109,7 @@ export const ViewOrdersModal: React.FC<ViewOrdersModalProps> = ({ isOpen, onClos
 
   const handleUpdateStatus = async (orderId: string) => {
     try {
-      await fetch(`http://localhost:8000/api/v1/orders/${orderId}/status`, {
+      await fetch(`${API_BASE_URL}/api/v1/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

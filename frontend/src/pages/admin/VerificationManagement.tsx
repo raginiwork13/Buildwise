@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { VerificationSubmission } from '../../types/profile';
@@ -15,7 +16,7 @@ export const VerificationManagement: React.FC = () => {
 
   const fetchSubmissions = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/admin/verifications');
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/verifications`);
       if (res.ok) {
         const data = await res.json();
         setSubmissions(data);
@@ -31,7 +32,7 @@ export const VerificationManagement: React.FC = () => {
     if (!selectedSub) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/admin/verifications/${selectedSub.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/verifications/${selectedSub.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

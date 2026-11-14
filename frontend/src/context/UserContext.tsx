@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserProfile, UserRole } from '../types';
 import { DEMO_USERS } from '../data/mockData';
@@ -78,7 +79,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fetch registered accounts from Supabase/Backend on mount
   const refreshAccounts = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/accounts');
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/accounts`);
       if (res.ok) {
         const serverAccounts = await res.json();
         if (Array.isArray(serverAccounts) && serverAccounts.length > 0) {
@@ -148,7 +149,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Save to Supabase user_accounts table via backend
     try {
-      await fetch('http://localhost:8000/api/v1/auth/register', {
+      await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +187,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Try backend / Supabase first
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail, password: password || 'pass123' })
@@ -291,7 +292,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     try {
-      await fetch('http://localhost:8000/api/v1/auth/update-tier', {
+      await fetch(`${API_BASE_URL}/api/v1/auth/update-tier`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

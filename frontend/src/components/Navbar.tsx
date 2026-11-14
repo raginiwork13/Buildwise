@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import { 
@@ -53,7 +54,7 @@ export const Navbar: React.FC = () => {
   const fetchNotifications = async () => {
     try {
       const activeRole = role || 'customer';
-      const res = await fetch(`http://localhost:8000/api/v1/notifications?role=${activeRole}`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/notifications?role=${activeRole}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -139,7 +140,7 @@ export const Navbar: React.FC = () => {
   const markAllRead = async () => {
     setNotifications(notifications.map(n => ({ ...n, unread: false })));
     try {
-      await fetch(`http://localhost:8000/api/v1/notifications/mark-all-read?role=${role || ''}`, {
+      await fetch(`${API_BASE_URL}/api/v1/notifications/mark-all-read?role=${role || ''}`, {
         method: 'PUT'
       });
     } catch {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -90,7 +91,7 @@ export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({
     };
 
     try {
-      await fetch('http://localhost:8000/api/v1/professionals/enquire', {
+      await fetch(`${API_BASE_URL}/api/v1/professionals/enquire`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -123,7 +124,7 @@ export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({
       if (minRating > 0) params.append('min_rating', minRating.toString());
       if (maxBudget < 50000000) params.append('max_budget', maxBudget.toString());
 
-      const res = await fetch(`http://localhost:8000/api/v1/professionals?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/professionals?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load marketplace profiles');
       const data = await res.json();
       setProfiles(data);
@@ -152,7 +153,7 @@ export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({
     setAiParsing(true);
     setAiParsedInfo(null);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/professionals/ai-search', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/professionals/ai-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: aiPrompt })
@@ -620,7 +621,7 @@ export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({
                 </div>
                 <h3 className="font-bold text-amber-950 text-base">Backend API Server Not Running</h3>
                 <p className="text-xs text-amber-800 max-w-md mx-auto">
-                  The frontend is trying to query <code>http://localhost:8000/api/v1/professionals</code>, but your FastAPI server is currently stopped in your backend terminal.
+                  The frontend is trying to query <code>${API_BASE_URL}/api/v1/professionals</code>, but your FastAPI server is currently stopped in your backend terminal.
                 </p>
                 <div className="bg-slate-900 text-amber-400 font-mono text-xs p-3 rounded-xl max-w-md mx-auto text-left">
                   uvicorn app.main:app --reload --port 8000

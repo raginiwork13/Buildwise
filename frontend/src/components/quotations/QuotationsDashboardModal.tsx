@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, CheckCircle2, XCircle, Play, MessageSquare, 
@@ -56,7 +57,7 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
   const fetchQuotations = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/quotations');
+      const res = await fetch(`${API_BASE_URL}/api/v1/quotations`);
       if (res.ok) {
         const data = await res.json();
         setQuotations(data);
@@ -144,7 +145,7 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
     setQuotations(prev => prev.map(q => q.id === quotationId ? { ...q, status: newStatus as any } : q));
 
     try {
-      await fetch(`http://localhost:8000/api/v1/quotations/${quotationId}/status`, {
+      await fetch(`${API_BASE_URL}/api/v1/quotations/${quotationId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -168,7 +169,7 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
       const q = quotations.find(q => q.id === quotationId);
       if (q) {
         try {
-          await fetch('http://localhost:8000/api/v1/workspaces', {
+          await fetch(`${API_BASE_URL}/api/v1/workspaces`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

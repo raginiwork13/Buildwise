@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Truck, Search, MapPin, Phone, Mail, CheckCircle2, Crown, Zap, Building2, ExternalLink, ShoppingBag, Package } from 'lucide-react';
@@ -52,7 +53,7 @@ export const SupplierMarketplacePage: React.FC = () => {
   const fetchSuppliers = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/suppliers');
+      const res = await fetch(`${API_BASE_URL}/api/v1/suppliers`);
       if (res.ok) {
         const data = await res.json();
         setSuppliers(data);

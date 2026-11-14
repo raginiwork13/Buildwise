@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
@@ -55,7 +56,7 @@ export const PublicProfessionalProfile: React.FC = () => {
     };
 
     try {
-      await fetch('http://localhost:8000/api/v1/professionals/enquire', {
+      await fetch(`${API_BASE_URL}/api/v1/professionals/enquire`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -78,7 +79,7 @@ export const PublicProfessionalProfile: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/professionals/${id || 'prof-carlos-1'}`);
+        const res = await fetch(`${API_BASE_URL}/api/v1/professionals/${id || 'prof-carlos-1'}`);
         if (res.ok) {
           const data = await res.json();
           setProfile(data);

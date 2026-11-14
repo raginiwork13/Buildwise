@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
@@ -82,7 +83,7 @@ export const RegistrationModal: React.FC = () => {
         };
 
         try {
-          await fetch('http://localhost:8000/api/v1/customers', {
+          await fetch(`${API_BASE_URL}/api/v1/customers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -132,7 +133,7 @@ export const RegistrationModal: React.FC = () => {
         };
 
         try {
-          const suppRes = await fetch('http://localhost:8000/api/v1/suppliers', {
+          const suppRes = await fetch(`${API_BASE_URL}/api/v1/suppliers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -141,7 +142,7 @@ export const RegistrationModal: React.FC = () => {
           if (suppRes.ok && productName.trim()) {
             const suppData = await suppRes.json();
             // Also register their product in database
-            await fetch(`http://localhost:8000/api/v1/suppliers/${suppData.id}/products`, {
+            await fetch(`${API_BASE_URL}/api/v1/suppliers/${suppData.id}/products`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -194,7 +195,7 @@ export const RegistrationModal: React.FC = () => {
         };
 
         try {
-          await fetch('http://localhost:8000/api/v1/professionals', {
+          await fetch(`${API_BASE_URL}/api/v1/professionals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
