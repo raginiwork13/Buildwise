@@ -111,6 +111,28 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
         } else {
           setCreatedWorkspaceId(`ws-${quot.project_id}`);
         }
+
+        // Record 2% Platform Commission Revenue (Business Model)
+        try {
+          await fetch('http://localhost:8000/api/v1/admin/revenue/collect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_id: quot.project_id,
+              project_title: quot.project_title,
+              quotation_id: quot.id,
+              agreed_budget: quot.total_estimated_price,
+              customer_name: quot.customer_name,
+              professional_name: quot.provider_name,
+              customer_commission_rate: 2.0,
+              professional_commission_rate: 2.0,
+              payment_method: 'Direct Platform Escrow',
+              transaction_type: 'project_approval_commission'
+            })
+          });
+        } catch (revErr) {
+          console.warn('Revenue commission record notice:', revErr);
+        }
       }
     } catch (err) {
       console.warn('Decision updated locally:', err);
@@ -259,6 +281,33 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
                             {quot.notes}
                           </div>
                         )}
+
+                        {/* Platform Business Model 2% Commission Notice */}
+                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-950 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold flex items-center gap-1.5 text-emerald-900">
+                              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                              <span>Platform Revenue & Escrow Commission (2% + 2% Model)</span>
+                            </span>
+                            <span className="text-[10px] bg-emerald-200 text-emerald-900 font-extrabold px-2 py-0.5 rounded-full">
+                              Platform Revenue
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] font-medium border-t border-emerald-200/60">
+                            <div>
+                              <span className="text-emerald-700 block text-[10px]">Customer (2%):</span>
+                              <strong className="text-slate-900">₹{(quot.total_estimated_price * 0.02).toLocaleString('en-IN')}</strong>
+                            </div>
+                            <div>
+                              <span className="text-emerald-700 block text-[10px]">Professional (2%):</span>
+                              <strong className="text-slate-900">₹{(quot.total_estimated_price * 0.02).toLocaleString('en-IN')}</strong>
+                            </div>
+                            <div>
+                              <span className="text-emerald-700 block text-[10px]">Total Revenue:</span>
+                              <strong className="text-emerald-800">₹{(quot.total_estimated_price * 0.04).toLocaleString('en-IN')}</strong>
+                            </div>
+                          </div>
+                        </div>
 
                         {/* Dual-approval info notice */}
                         <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">

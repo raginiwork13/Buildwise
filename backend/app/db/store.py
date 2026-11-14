@@ -44,6 +44,7 @@ class InMemoryDB:
         self.supplier_orders: Dict[str, Dict[str, Any]] = {}
         self.notifications: Dict[str, Dict[str, Any]] = {}
         self.enquiries: Dict[str, Dict[str, Any]] = {}
+        self.platform_revenue_transactions: Dict[str, Dict[str, Any]] = {}
         self._seed_initial_data()
 
     def _seed_initial_data(self):
@@ -634,6 +635,14 @@ class InMemoryDB:
             "start_confirmed_customer": True,
             "completion_confirmed_professional": False,
             "completion_confirmed_customer": False,
+            # Commission escrow — demo workspace is PAID (always unlocked)
+            "commission_paid_customer": True,
+            "commission_paid_professional": True,
+            "commission_status": "paid",
+            "commission_amount_customer": 163000.0,
+            "commission_amount_professional": 163000.0,
+            "warning_notices_sent": 0,
+            "circumvention_flagged_at": None,
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
         }
@@ -867,6 +876,118 @@ class InMemoryDB:
             "type": "system",
             "unread": True,
             "created_at": datetime.now().isoformat()
+        }
+
+        # Seed Master Admin Account (Single Fixed Account)
+        self.user_accounts["admin@buildwise.goa"] = {
+            "id": "a0000000-0000-0000-0000-000000000001",
+            "email": "admin@buildwise.goa",
+            "password_hash": "admin123",
+            "full_name": "BuildWise Admin Master",
+            "role": "admin",
+            "phone": "+91 832 2420000",
+            "city": "Panaji",
+            "district": "North Goa",
+            "default_location": "HQ Panaji, Goa",
+            "subscription_tier": "premium",
+            "is_sponsored": True,
+            "is_verified": True,
+            "created_at": datetime.now(),
+            "last_login_at": datetime.now()
+        }
+
+        # Seed Initial Platform Revenue (Rahul x Carlos Approved Villa Project: Budget ₹81,50,000)
+        self.platform_revenue_transactions["rev-demo-1"] = {
+            "id": "rev-demo-1",
+            "project_id": "proj-c1",
+            "project_title": "4BHK Contemporary Portuguese Villa with Swimming Pool",
+            "quotation_id": "quot-1",
+            "agreed_budget": 8150000.0,
+            "customer_name": "Rahul Naik",
+            "customer_commission_rate": 2.0,
+            "customer_commission_amount": 163000.0,
+            "professional_name": "Carlos Fernandes",
+            "professional_commission_rate": 2.0,
+            "professional_commission_amount": 163000.0,
+            "total_platform_revenue": 326000.0,
+            "status": "collected",
+            "payment_method": "Direct Platform Escrow",
+            "transaction_type": "project_approval_commission",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+
+        # Seed initial Pro & Premium subscription membership revenues
+        self.platform_revenue_transactions["sub-rev-1"] = {
+            "id": "sub-rev-1",
+            "project_id": "sub-premium-carlos@fernandesconstruct.in",
+            "project_title": "PREMIUM Membership Subscription (Professional)",
+            "quotation_id": None,
+            "agreed_budget": 799.0,
+            "customer_name": "-",
+            "customer_commission_rate": 0.0,
+            "customer_commission_amount": 0.0,
+            "professional_name": "Carlos Fernandes",
+            "professional_commission_rate": 0.0,
+            "professional_commission_amount": 799.0,
+            "total_platform_revenue": 799.0,
+            "status": "collected",
+            "payment_method": "Subscription Recurring Gateway",
+            "transaction_type": "subscription_premium",
+            "subscriber_email": "carlos@fernandesconstruct.in",
+            "subscriber_name": "Carlos Fernandes",
+            "subscriber_role": "professional",
+            "subscription_tier": "premium",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+
+        self.platform_revenue_transactions["sub-rev-2"] = {
+            "id": "sub-rev-2",
+            "project_id": "sub-pro-ananya@ateliergoa.com",
+            "project_title": "PRO Membership Subscription (Professional)",
+            "quotation_id": None,
+            "agreed_budget": 299.0,
+            "customer_name": "-",
+            "customer_commission_rate": 0.0,
+            "customer_commission_amount": 0.0,
+            "professional_name": "Ar. Ananya Deshmukh",
+            "professional_commission_rate": 0.0,
+            "professional_commission_amount": 299.0,
+            "total_platform_revenue": 299.0,
+            "status": "collected",
+            "payment_method": "Subscription Recurring Gateway",
+            "transaction_type": "subscription_pro",
+            "subscriber_email": "ananya@ateliergoa.com",
+            "subscriber_name": "Ar. Ananya Deshmukh",
+            "subscriber_role": "professional",
+            "subscription_tier": "pro",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+
+        self.platform_revenue_transactions["sub-rev-3"] = {
+            "id": "sub-rev-3",
+            "project_id": "sub-premium-mandovi.supplies@gmail.com",
+            "project_title": "PREMIUM Membership Subscription (Supplier)",
+            "quotation_id": None,
+            "agreed_budget": 799.0,
+            "customer_name": "-",
+            "customer_commission_rate": 0.0,
+            "customer_commission_amount": 0.0,
+            "professional_name": "Mandovi Building Solutions & Steel Yard",
+            "professional_commission_rate": 0.0,
+            "professional_commission_amount": 799.0,
+            "total_platform_revenue": 799.0,
+            "status": "collected",
+            "payment_method": "Subscription Recurring Gateway",
+            "transaction_type": "subscription_premium",
+            "subscriber_email": "mandovi.supplies@gmail.com",
+            "subscriber_name": "Sunil Silva",
+            "subscriber_role": "supplier",
+            "subscription_tier": "premium",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
         }
 
 db = InMemoryDB()

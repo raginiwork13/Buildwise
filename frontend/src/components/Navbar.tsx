@@ -135,7 +135,8 @@ export const Navbar: React.FC = () => {
   const roleConfig = {
     customer: { label: 'Property Owner', badge: 'bg-blue-100 text-blue-800 border-blue-200', icon: Home },
     professional: { label: 'Contractor / Pro', badge: 'bg-amber-100 text-amber-900 border-amber-200', icon: HardHat },
-    supplier: { label: 'Material Supplier', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Truck }
+    supplier: { label: 'Material Supplier', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Truck },
+    admin: { label: 'Platform Admin', badge: 'bg-purple-100 text-purple-900 border-purple-300', icon: ShieldCheck }
   };
 
   const handleUserSelect = (account: UserProfile) => {
@@ -191,6 +192,17 @@ export const Navbar: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
             </Link>
+
+            {role === 'admin' && (
+              <Link 
+                to="/admin/revenue" 
+                className="text-white font-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-xs border border-purple-400/40 text-xs tracking-wide"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+                <span>Platform Revenue (2%)</span>
+              </Link>
+            )}
+
             <a href="/#how-it-works" className="hover:text-amber-600 transition-colors text-xs">How It Works</a>
           </nav>
 
@@ -416,6 +428,21 @@ export const Navbar: React.FC = () => {
                         <span>Verification Submissions & Badges</span>
                       </span>
                     </Link>
+
+                    {/* Admin Revenue Dashboard */}
+                    {role === 'admin' && (
+                      <Link
+                        to="/admin/revenue"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between bg-purple-50 text-purple-950 font-bold border border-purple-200 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-purple-600" />
+                          <span>Platform Revenue & Commission (2%)</span>
+                        </span>
+                        <span className="text-[10px] bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded font-black">Admin</span>
+                      </Link>
+                    )}
                   </div>
 
                   {/* Switch Persona (Customer vs Professional vs Supplier) */}
@@ -428,8 +455,9 @@ export const Navbar: React.FC = () => {
                     <div className="space-y-1 max-h-52 overflow-y-auto pr-1">
                       {accounts.map((acct) => {
                         const isCurrent = currentUser?.email.toLowerCase() === acct.email.toLowerCase();
-                        const Icon = acct.role === 'professional' ? HardHat : acct.role === 'supplier' ? Truck : Home;
+                        const Icon = acct.role === 'admin' ? ShieldCheck : acct.role === 'professional' ? HardHat : acct.role === 'supplier' ? Truck : Home;
                         const roleColor = 
+                          acct.role === 'admin' ? 'text-purple-600' :
                           acct.role === 'professional' ? 'text-amber-500' :
                           acct.role === 'supplier' ? 'text-emerald-500' :
                           'text-blue-500';

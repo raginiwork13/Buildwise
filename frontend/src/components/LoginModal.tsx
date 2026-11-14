@@ -159,6 +159,7 @@ export const LoginModal: React.FC = () => {
               {accounts.map((acct) => {
                 const isActive = currentUser?.email.toLowerCase() === acct.email.toLowerCase();
                 const roleBadge = 
+                  acct.role === 'admin' ? 'bg-purple-100 text-purple-900 font-bold border border-purple-200' :
                   acct.role === 'professional' ? 'bg-amber-100 text-amber-800' :
                   acct.role === 'supplier' ? 'bg-emerald-100 text-emerald-800' :
                   'bg-blue-100 text-blue-800';

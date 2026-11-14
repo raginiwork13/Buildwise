@@ -29,6 +29,13 @@ interface ProjectWorkspace {
   start_confirmed_customer: boolean;
   completion_confirmed_professional: boolean;
   completion_confirmed_customer: boolean;
+  // Commission Escrow Gate fields
+  commission_paid_customer?: boolean;
+  commission_paid_professional?: boolean;
+  commission_status?: 'pending' | 'paid' | 'flagged_bypass';
+  commission_amount_customer?: number;
+  commission_amount_professional?: number;
+  warning_notices_sent?: number;
 }
 
 interface ProjectMilestone {
@@ -150,6 +157,13 @@ const DEMO_WORKSPACE: ProjectWorkspace = {
   start_confirmed_customer: true,
   completion_confirmed_professional: false,
   completion_confirmed_customer: false,
+  // Commission — demo is always paid/unlocked
+  commission_paid_customer: true,
+  commission_paid_professional: true,
+  commission_status: 'paid',
+  commission_amount_customer: 163000,
+  commission_amount_professional: 163000,
+  warning_notices_sent: 0,
 };
 
 const DEMO_MILESTONES: ProjectMilestone[] = [
@@ -226,6 +240,11 @@ export const MyProjectsPanel: React.FC<MyProjectsPanelProps> = ({ isOpen, onClos
   // Customer-only: payment
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paymentRef, setPaymentRef] = useState('');
+
+  // Commission Escrow Gate
+  const [showCommPayModal, setShowCommPayModal] = useState(false);
+  const [commPayRef, setCommPayRef] = useState('');
+  const [commPayLoading, setCommPayLoading] = useState(false);
 
   // Completion (dual approval)
   const [rating, setRating] = useState(5);
@@ -449,6 +468,46 @@ export const MyProjectsPanel: React.FC<MyProjectsPanelProps> = ({ isOpen, onClos
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
+  // ── Commission Escrow Gate: Pay Commission ───────────────────────────────
+  const handlePayCommission = async () => {
+    if (!workspace || !commPayRef.trim()) {
+      showMsg('⚠ Please enter your UPI/NEFT transaction reference to proceed.');
+      return;
+    }
+    setCommPayLoading(true);
+    try {
+      const res = await fetch(`${API}/workspaces/${workspace.id}/pay-commission`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: isProfessional ? 'professional' : 'customer',
+          payment_reference: commPayRef,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setWorkspace(updated);
+        setShowCommPayModal(false);
+        setCommPayRef('');
+        showMsg('✅ Commission payment recorded! Project workspace is now unlocked.');
+      } else {
+        showMsg('⚠ Payment registration failed. Please try again.');
+      }
+    } catch {
+      // Offline fallback: optimistically unlock
+      const myField = isProfessional ? 'commission_paid_professional' : 'commission_paid_customer';
+      const updated = { ...workspace, [myField]: true };
+      const bothPaid = updated.commission_paid_customer && updated.commission_paid_professional;
+      if (bothPaid) updated.commission_status = 'paid';
+      setWorkspace(updated);
+      setShowCommPayModal(false);
+      setCommPayRef('');
+      showMsg('✅ Commission payment recorded locally! Project workspace unlocked.');
+    } finally {
+      setCommPayLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const ws = workspace;
@@ -462,6 +521,17 @@ export const MyProjectsPanel: React.FC<MyProjectsPanelProps> = ({ isOpen, onClos
   const otherCompletionConfirmed = ws ? (isProfessional ? ws.completion_confirmed_customer : ws.completion_confirmed_professional) : false;
   const otherName = ws ? (isProfessional ? ws.customer_name : ws.professional_name) : '';
   const projectActive = ws?.status === 'active';
+
+  // Commission escrow gate logic
+  const commissionUnlocked = !ws || ws.commission_status === 'paid';
+  const myCommissionPaid = ws
+    ? (isProfessional ? !!ws.commission_paid_professional : !!ws.commission_paid_customer)
+    : false;
+  const otherCommissionPaid = ws
+    ? (isProfessional ? !!ws.commission_paid_customer : !!ws.commission_paid_professional)
+    : false;
+  const myCommAmt = ws ? (isProfessional ? (ws.commission_amount_professional ?? Math.round((ws.agreed_amount || 0) * 0.02)) : (ws.commission_amount_customer ?? Math.round((ws.agreed_amount || 0) * 0.02))) : 0;
+  const otherName2 = ws ? (isProfessional ? ws.customer_name : ws.professional_name) : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -572,6 +642,69 @@ export const MyProjectsPanel: React.FC<MyProjectsPanelProps> = ({ isOpen, onClos
               <BarChart2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-800">No Active Projects</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Your project workspace appears here once a quotation is approved and both parties confirm work commencement.</p>
+            </div>
+          ) : !commissionUnlocked ? (
+            /* ══════════════ COMMISSION ESCROW GATE LOCK SCREEN ══════════════ */
+            <div className="p-8 text-center space-y-6">
+              <div className="w-20 h-20 rounded-3xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
+                <Lock className="w-10 h-10" />
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                  Platform Escrow Gate Active
+                </span>
+                <h3 className="text-xl font-black text-slate-900 mt-2">
+                  Project Workspace Locked
+                </h3>
+                <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                  To protect both parties with milestone guarantees, contract safety, and platform insurance, 
+                  the <strong>2% platform commission</strong> must be submitted before project progress tracking is unlocked.
+                </p>
+              </div>
+
+              {/* Status Box */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl max-w-md mx-auto space-y-3 text-left">
+                <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-200">
+                  <span className="text-slate-500">Agreed Project Budget:</span>
+                  <span className="font-black text-slate-900">{fmtINR(ws.agreed_amount)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-200">
+                  <span className="text-slate-500">Your Required 2% Platform Fee:</span>
+                  <span className="font-black text-amber-700">{fmtINR(myCommAmt)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1 text-center">
+                  <div className={`p-2.5 rounded-xl border text-xs font-bold ${myCommissionPaid ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300'}`}>
+                    <div>{myCommissionPaid ? '✅ Paid' : '⏳ Pending'}</div>
+                    <div className="text-[10px] font-normal text-slate-500 mt-0.5">Your 2% Fee</div>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border text-xs font-bold ${otherCommissionPaid ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <div>{otherCommissionPaid ? '✅ Paid' : '⏳ Pending'}</div>
+                    <div className="text-[10px] font-normal text-slate-500 mt-0.5">{otherName2}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Anti-circumvention warning notice */}
+              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl max-w-md mx-auto text-left flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-950 leading-relaxed">
+                  <strong>Notice against bypass:</strong> Attempting to bypass the platform after agreement will automatically flag both accounts. Verified status and future access will be restricted.
+                </p>
+              </div>
+
+              {/* Action Button */}
+              {!myCommissionPaid && (
+                <div className="max-w-md mx-auto">
+                  <button
+                    onClick={() => setShowCommPayModal(true)}
+                    className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Pay 2% Escrow Commission ({fmtINR(myCommAmt)})</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -1129,6 +1262,73 @@ export const MyProjectsPanel: React.FC<MyProjectsPanelProps> = ({ isOpen, onClos
           )}
         </div>
       </div>
+
+      {/* ── Commission Payment Modal ── */}
+      {showCommPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-black text-slate-900">Pay 2% Escrow Commission</h3>
+              </div>
+              <button 
+                onClick={() => setShowCommPayModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div className="font-bold">Project: {ws?.project_title}</div>
+              <div>Agreed Value: <strong>{fmtINR(ws?.agreed_amount || 0)}</strong></div>
+              <div>Your 2% Platform Fee: <strong className="text-amber-700">{fmtINR(myCommAmt)}</strong></div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block">
+                Enter Payment Reference / UTR / Transaction ID *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. UPI/2026/894120392 or NEFT-SBIN00412"
+                value={commPayRef}
+                onChange={(e) => setCommPayRef(e.target.value)}
+                className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50 focus:bg-white"
+              />
+              <p className="text-[10px] text-slate-400">
+                Payment is credited towards platform dispute coverage and milestone release escrow.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handlePayCommission}
+                disabled={commPayLoading || !commPayRef.trim()}
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+              >
+                {commPayLoading ? (
+                  <span>Processing...</span>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirm & Unlock Workspace</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCommPayModal(false)}
+                className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

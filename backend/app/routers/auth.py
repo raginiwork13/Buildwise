@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uuid
 from datetime import datetime
+from pydantic import BaseModel
 
 from app.schemas.auth import (
     UserRegisterRequest,
@@ -37,6 +38,51 @@ def sync_accounts_from_supabase():
     except Exception as e:
         print(f"Supabase accounts sync notice: {e}")
 
+def record_subscription_revenue(email: str, role: str, tier: str, full_name: Optional[str] = None):
+    """Automatically records subscription revenue for Pro and Premium plans into platform revenue."""
+    tier = (tier or "").lower().strip()
+    if tier not in ["pro", "premium"]:
+        return
+
+    price = 299.0 if tier == "pro" else 799.0
+    tx_id = f"sub-rev-{uuid.uuid4().hex[:8]}"
+    now = datetime.now()
+
+    user_name = full_name or email.split("@")[0].title()
+    tx_data = {
+        "id": tx_id,
+        "project_id": f"sub-{tier}-{email}",
+        "project_title": f"{tier.upper()} Membership Subscription ({role.title()})",
+        "quotation_id": None,
+        "agreed_budget": price,
+        "customer_name": user_name if role == "customer" else "-",
+        "customer_commission_rate": 0.0,
+        "customer_commission_amount": price if role == "customer" else 0.0,
+        "professional_name": user_name if role == "professional" else (user_name if role == "supplier" else "-"),
+        "professional_commission_rate": 0.0,
+        "professional_commission_amount": price if role in ["professional", "supplier"] else 0.0,
+        "total_platform_revenue": price,
+        "status": "collected",
+        "payment_method": "Subscription Recurring Gateway",
+        "transaction_type": f"subscription_{tier}",
+        "subscriber_email": email,
+        "subscriber_name": user_name,
+        "subscriber_role": role,
+        "subscription_tier": tier,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat()
+    }
+
+    if not hasattr(db, "platform_revenue_transactions"):
+        db.platform_revenue_transactions = {}
+
+    db.platform_revenue_transactions[tx_id] = tx_data
+    if supabase_client:
+        try:
+            supabase_client.table("platform_revenue_transactions").upsert(tx_data).execute()
+        except Exception as e:
+            print(f"Supabase subscription revenue insert notice: {e}")
+
 @router.post("/register", response_model=UserAccountResponse, status_code=201)
 def register(payload: UserRegisterRequest):
     email = payload.email.lower().strip()
@@ -55,6 +101,19 @@ def register(payload: UserRegisterRequest):
 
     # Store in Supabase
     save_account_to_supabase(data)
+
+    # Record subscription revenue if registering with pro or premium
+    tier = (payload.subscription_tier or "free").lower().strip()
+    if tier in ["pro", "premium"]:
+        try:
+            record_subscription_revenue(
+                email=email,
+                role=payload.role or "customer",
+                tier=tier,
+                full_name=payload.full_name
+            )
+        except Exception as e:
+            print(f"Subscription revenue recording error on register: {e}")
 
     return data
 
@@ -202,6 +261,18 @@ def update_user_tier(payload: UpdateTierRequest):
 
     db.user_accounts[email] = account
     save_account_to_supabase(account)
+
+    # Record subscription revenue when upgrading/changing to pro or premium
+    if tier in ["pro", "premium"]:
+        try:
+            record_subscription_revenue(
+                email=email,
+                role=account.get("role") or payload.role or "customer",
+                tier=tier,
+                full_name=account.get("full_name")
+            )
+        except Exception as e:
+            print(f"Subscription revenue recording error on update tier: {e}")
 
     # Also update role-specific profiles in Supabase if connected
     if supabase_client:
