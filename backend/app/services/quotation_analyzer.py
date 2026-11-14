@@ -4,7 +4,10 @@ import re
 import json
 import time
 from typing import List, Dict, Any, Optional
-import pypdf
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
 from app.config import settings
 
 # ---------------------------------------------------------------------------

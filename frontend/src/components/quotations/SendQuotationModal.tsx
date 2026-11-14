@@ -111,10 +111,18 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      window.dispatchEvent(new CustomEvent('new_notification', {
+        detail: {
+          title: '📄 Quotation Sent Successfully',
+          desc: `Quotation sent to ${project.customer_name} for "${project.title}".`
+        }
+      }));
+      window.dispatchEvent(new Event('refresh_notifications'));
       onSuccess();
       onClose();
     } catch (err) {
       console.warn('Backend offline, saved locally:', err);
+      window.dispatchEvent(new Event('refresh_notifications'));
       onSuccess();
       onClose();
     } finally {

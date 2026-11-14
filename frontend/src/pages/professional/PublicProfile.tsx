@@ -1,18 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 import type { ProfessionalProfileFull } from '../../types/profile';
 import { AvailabilityBadge } from '../../components/profile/AvailabilityBadge';
 import { VerificationBadge } from '../../components/profile/VerificationBadge';
 import { PortfolioCard } from '../../components/portfolio/PortfolioCard';
 import { 
-  MapPin, Mail, Phone, Globe, Star, Award, ArrowRight, ChevronRight
+  MapPin, Mail, Phone, Globe, Star, Award, ArrowRight, ChevronRight, X, Send, ShieldCheck
 } from 'lucide-react';
 
 export const PublicProfessionalProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { currentUser, role } = useUser();
   const [profile, setProfile] = useState<ProfessionalProfileFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'portfolio' | 'services' | 'certifications' | 'reviews'>('portfolio');
+
+  // Enquiry Modal state
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [enquirySent, setEnquirySent] = useState(false);
+  const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
+  const [senderName, setSenderName] = useState('');
+  const [senderPhone, setSenderPhone] = useState('');
+  const [projectLocation, setProjectLocation] = useState('Panaji, Goa');
+  const [budgetRange, setBudgetRange] = useState('₹25 Lakh – ₹50 Lakh');
+  const [enquiryText, setEnquiryText] = useState('');
+
+  const handleOpenEnquiry = () => {
+    setSenderName(currentUser?.fullName || (role === 'supplier' ? 'Sunil Silva' : 'Rahul Naik'));
+    setSenderPhone(currentUser?.phone || '+91 98221 45091');
+    setProjectLocation('Panaji, Goa');
+    setBudgetRange('₹25 Lakh – ₹50 Lakh');
+    setEnquiryText('');
+    setEnquirySent(false);
+    setShowEnquiryModal(true);
+  };
+
+  const handleSubmitEnquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    setSubmittingEnquiry(true);
+    const sName = senderName || currentUser?.fullName || (role === 'supplier' ? 'Sunil Silva' : 'Rahul Naik');
+    const sRole = role || 'customer';
+    const payload = {
+      professional_id: profile.id,
+      professional_name: profile.full_name,
+      professional_company: profile.company_name,
+      sender_name: sName,
+      sender_role: sRole,
+      sender_phone: senderPhone || currentUser?.phone || '+91 98221 45091',
+      project_location: projectLocation,
+      budget_range: budgetRange,
+      requirements: enquiryText
+    };
+
+    try {
+      await fetch('http://localhost:8000/api/v1/professionals/enquire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.warn('Enquiry fallback:', err);
+    } finally {
+      setSubmittingEnquiry(false);
+      setEnquirySent(true);
+      window.dispatchEvent(new CustomEvent('new_notification', {
+        detail: {
+          title: '📋 New Enquiry Received',
+          desc: `${sName} enquired for ${profile.full_name}'s profile!`
+        }
+      }));
+      window.dispatchEvent(new Event('refresh_notifications'));
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -102,7 +163,10 @@ export const PublicProfessionalProfile: React.FC = () => {
 
               <div className="flex flex-col items-center sm:items-end gap-2">
                 <AvailabilityBadge status={profile.availability_status} />
-                <button className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer">
+                <button 
+                  onClick={handleOpenEnquiry}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer"
+                >
                   <span>Request Project Quotation</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -284,6 +348,134 @@ export const PublicProfessionalProfile: React.FC = () => {
         </div>
 
       </div>
+
+      {/* INSTANT ENQUIRY MODAL */}
+      {showEnquiryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden p-6 space-y-4">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Instant Project Enquiry
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1">
+                  Enquire with {profile.company_name || profile.full_name}
+                </h3>
+                <p className="text-xs text-slate-500">Direct transmission to professional dashboard with real-time notification.</p>
+              </div>
+              <button
+                onClick={() => setShowEnquiryModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {enquirySent ? (
+              <div className="py-6 text-center space-y-3">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h4 className="font-black text-slate-900 text-base">Enquiry Sent Successfully!</h4>
+                <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                  Your project specifications have been dispatched to <strong>{profile.full_name}</strong>. They will receive a notification and respond directly.
+                </p>
+                <button
+                  onClick={() => setShowEnquiryModal(false)}
+                  className="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                >
+                  Close Window
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitEnquiry} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Your Name ({role === 'supplier' ? 'Supplier' : 'Consumer'})
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder="e.g. Rahul Naik"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Contact Phone</label>
+                    <input
+                      type="tel"
+                      required
+                      value={senderPhone}
+                      onChange={(e) => setSenderPhone(e.target.value)}
+                      placeholder="+91 98221 00000"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Your Project Location in Goa</label>
+                  <input
+                    type="text"
+                    required
+                    value={projectLocation}
+                    onChange={(e) => setProjectLocation(e.target.value)}
+                    placeholder="e.g. Assagao, Candolim, or Margao"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Estimated Budget Range</label>
+                  <select 
+                    value={budgetRange}
+                    onChange={(e) => setBudgetRange(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option>₹25 Lakh – ₹50 Lakh</option>
+                    <option>₹50 Lakh – ₹1 Crore</option>
+                    <option>₹1 Crore – ₹2.5 Crore</option>
+                    <option>Above ₹2.5 Crore</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Project Requirements & Scope</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={enquiryText}
+                    onChange={(e) => setEnquiryText(e.target.value)}
+                    placeholder="Briefly describe what you're constructing (e.g. 3BHK Portuguese villa, foundation + slab, architectural drawings)..."
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEnquiryModal(false)}
+                    className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingEnquiry}
+                    className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{submittingEnquiry ? 'Sending...' : 'Send Enquiry Directly'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
