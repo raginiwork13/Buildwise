@@ -49,6 +49,20 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     minOrderValue: 25000,
     isVerified: true,
     createdAt: '2025-08-20'
+  },
+  admin: {
+    id: 'a0000000-0000-0000-0000-000000000001',
+    fullName: 'BuildWise Admin Master',
+    email: 'admin@buildwise.goa',
+    phone: '+91 832 2420000',
+    role: 'admin',
+    city: 'Panaji',
+    locationDistrict: 'North Goa',
+    defaultLocation: 'HQ Panaji, Goa',
+    subscriptionTier: 'premium',
+    isSponsored: true,
+    isVerified: true,
+    createdAt: '2025-01-01'
   }
 };
 

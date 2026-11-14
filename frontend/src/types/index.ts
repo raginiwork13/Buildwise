@@ -1,4 +1,4 @@
-export type UserRole = 'customer' | 'professional' | 'supplier';
+export type UserRole = 'customer' | 'professional' | 'supplier' | 'admin';
 
 export type ProfessionalCategory = 
   | 'contractor' 

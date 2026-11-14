@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, CheckCheck, FolderKanban, HardHat, Truck, User } from 'lucide-react';
+import { MessageSquare, X, Send, CheckCheck, FolderKanban, HardHat, Truck, User, Lock, Crown } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
+import { ChangePlanModal } from '../subscription/ChangePlanModal';
 
 export interface ChatTarget {
   recipientId: string;
@@ -43,7 +44,11 @@ export const OlxChatDrawer: React.FC<OlxChatDrawerProps> = ({ isOpen, onClose, i
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const userTier = (currentUser?.subscriptionTier || 'free').toLowerCase();
+  const canChat = userTier === 'pro' || userTier === 'premium';
 
   // Normalize conversation ID using sorted user names so both sender & receiver share the same thread
   const generateConvId = (name1: string, name2: string) => {
@@ -346,28 +351,55 @@ export const OlxChatDrawer: React.FC<OlxChatDrawerProps> = ({ isOpen, onClose, i
           </div>
 
           {/* Chat Input Box */}
-          <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-white border-t border-slate-200 flex items-center gap-2">
-            <input
-              type="text"
-              disabled={!activeTarget}
-              placeholder={activeTarget ? `Message ${activeTarget.recipientName}...` : 'Select a recipient first...'}
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!activeTarget || !inputText.trim()}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Send</span>
-            </button>
-          </form>
+          {!canChat ? (
+            <div className="p-4 bg-amber-50 border-t border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-amber-950">Chat is locked on Free Tier</div>
+                  <div className="text-[11px] text-amber-800">Direct real-time consultation is available for Pro & Premium members.</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0 flex items-center gap-1.5"
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>Upgrade to Pro / Premium</span>
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-white border-t border-slate-200 flex items-center gap-2">
+              <input
+                type="text"
+                disabled={!activeTarget}
+                placeholder={activeTarget ? `Message ${activeTarget.recipientName}...` : 'Select a recipient first...'}
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={!activeTarget || !inputText.trim()}
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send</span>
+              </button>
+            </form>
+          )}
 
         </div>
 
       </div>
+
+      <ChangePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </div>
   );
 };

@@ -100,6 +100,11 @@ def create_workspace(payload: dict):
     proj_id = payload.get("project_id", "")
     ws_id = payload.get("id") or (f"ws-{proj_id}" if proj_id else f"ws-{uuid.uuid4().hex[:8]}")
     now = datetime.now().isoformat()
+    agreed_amt_val = float(payload.get("agreed_amount", 0) or 0)
+    comm_cust = round(agreed_amt_val * 0.02, 2)
+    comm_pro  = round(agreed_amt_val * 0.02, 2)
+    is_demo   = ws_id == "ws-demo-1"
+
     workspace = {
         "id": ws_id,
         "project_id": proj_id,
@@ -107,7 +112,7 @@ def create_workspace(payload: dict):
         "customer_name": payload.get("customer_name", ""),
         "professional_name": payload.get("professional_name", ""),
         "professional_company": payload.get("professional_company", ""),
-        "agreed_amount": payload.get("agreed_amount", 0),
+        "agreed_amount": agreed_amt_val,
         "expected_start_date": payload.get("expected_start_date", now[:10]),
         "expected_completion_date": payload.get("expected_completion_date", ""),
         "status": "active",
@@ -117,6 +122,14 @@ def create_workspace(payload: dict):
         "start_confirmed_customer": True,
         "completion_confirmed_professional": False,
         "completion_confirmed_customer": False,
+        # Commission escrow gate fields
+        "commission_paid_customer": is_demo,
+        "commission_paid_professional": is_demo,
+        "commission_status": "paid" if is_demo else "pending",
+        "commission_amount_customer": comm_cust,
+        "commission_amount_professional": comm_pro,
+        "warning_notices_sent": 0,
+        "circumvention_flagged_at": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -124,6 +137,30 @@ def create_workspace(payload: dict):
     save_workspace_to_supabase(workspace)
     _ensure_default_milestones(ws_id)
     _ensure_default_payments(ws_id)
+
+    # Automatically record 2% + 2% platform commission for revenue dashboard
+    try:
+        from app.routers.revenue import record_project_commission, CollectRevenueRequest
+        agreed_amt = float(workspace.get("agreed_amount") or 0.0)
+        if agreed_amt > 0:
+            already_recorded = any(
+                t.get("project_id") == proj_id 
+                for t in getattr(db, "platform_revenue_transactions", {}).values()
+            )
+            if not already_recorded:
+                record_project_commission(CollectRevenueRequest(
+                    project_id=proj_id or ws_id,
+                    project_title=workspace.get("project_title", "Agreed Construction Project"),
+                    quotation_id=payload.get("quotation_id"),
+                    agreed_budget=agreed_amt,
+                    customer_name=workspace.get("customer_name", "Customer"),
+                    professional_name=workspace.get("professional_name", "Professional"),
+                    customer_commission_rate=2.0,
+                    professional_commission_rate=2.0
+                ))
+    except Exception as e:
+        print(f"Auto-record workspace commission notice: {e}")
+
     return workspace
 
 
@@ -179,6 +216,94 @@ def confirm_project_completion(workspace_id: str, payload: dict):
     db.project_workspaces[workspace_id] = ws
     save_workspace_to_supabase(ws)
     return ws
+
+
+# ─── Commission Escrow Gate ────────────────────────────────────────────────────
+
+@router.post("/{workspace_id}/pay-commission")
+def pay_commission(workspace_id: str, payload: dict):
+    """Record a commission payment by customer or professional."""
+    ws = db.project_workspaces.get(workspace_id)
+    if not ws:
+        # Try Supabase
+        if supabase_client:
+            try:
+                res = supabase_client.table("project_workspaces").select("*").eq("id", workspace_id).execute()
+                if res.data:
+                    ws = res.data[0]
+                    db.project_workspaces[workspace_id] = ws
+            except Exception:
+                pass
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    role = payload.get("role", "")  # 'customer' | 'professional'
+    payment_ref = payload.get("payment_reference", "")
+    now = datetime.now().isoformat()
+
+    if role == "customer":
+        ws["commission_paid_customer"] = True
+        ws["commission_payment_ref_customer"] = payment_ref
+    elif role == "professional":
+        ws["commission_paid_professional"] = True
+        ws["commission_payment_ref_professional"] = payment_ref
+    else:
+        raise HTTPException(status_code=400, detail="role must be 'customer' or 'professional'")
+
+    # If both paid → unlock
+    if ws.get("commission_paid_customer") and ws.get("commission_paid_professional"):
+        ws["commission_status"] = "paid"
+    
+    ws["updated_at"] = now
+    db.project_workspaces[workspace_id] = ws
+    save_workspace_to_supabase(ws)
+    return ws
+
+
+@router.post("/{workspace_id}/flag-circumvention")
+def flag_circumvention(workspace_id: str, payload: dict):
+    """Flag a workspace for potential platform circumvention (bypass)."""
+    ws = db.project_workspaces.get(workspace_id)
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    now = datetime.now().isoformat()
+    ws["commission_status"] = "flagged_bypass"
+    ws["warning_notices_sent"] = int(ws.get("warning_notices_sent") or 0) + 1
+    ws["circumvention_flagged_at"] = now
+    ws["updated_at"] = now
+    db.project_workspaces[workspace_id] = ws
+    save_workspace_to_supabase(ws)
+
+    # Also log to circumvention_warnings table (Supabase)
+    if supabase_client:
+        try:
+            warning_record = {
+                "workspace_id": workspace_id,
+                "project_title": ws.get("project_title", ""),
+                "customer_name": ws.get("customer_name", ""),
+                "customer_email": payload.get("customer_email", ""),
+                "professional_name": ws.get("professional_name", ""),
+                "professional_email": payload.get("professional_email", ""),
+                "agreed_budget": ws.get("agreed_amount", 0),
+                "commission_due": float(ws.get("commission_amount_customer", 0) or 0) + float(ws.get("commission_amount_professional", 0) or 0),
+                "warning_type": "bypass_detected",
+                "notices_sent": ws["warning_notices_sent"],
+                "admin_note": payload.get("admin_note", "Circumvention warning sent by admin"),
+                "created_at": now,
+                "updated_at": now,
+            }
+            supabase_client.table("circumvention_warnings").insert(warning_record).execute()
+        except Exception as e:
+            print(f"Circumvention log notice: {e}")
+
+    return {
+        "success": True,
+        "workspace_id": workspace_id,
+        "commission_status": ws["commission_status"],
+        "warning_notices_sent": ws["warning_notices_sent"],
+        "timestamp": now,
+        "message": f"Anti-circumvention warning sent. Total notices: {ws['warning_notices_sent']}",
+    }
 
 
 # ─── Milestones ────────────────────────────────────────────────────────────────
