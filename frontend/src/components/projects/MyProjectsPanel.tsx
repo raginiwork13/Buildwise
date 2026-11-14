@@ -356,9 +356,17 @@ export const MyProjectsPanel: React.FC<MyProjectsPanelProps> = ({ isOpen, onClos
     } catch { /* local only */ }
     if (bothConfirmed) {
       showMsg('🏆 Project marked as Completed by both parties!');
+      window.dispatchEvent(new CustomEvent('project_completed', {
+        detail: {
+          title: '🏆 Project Completed!',
+          desc: `Project "${workspace.project_title}" is officially completed! Both consumer and professional have confirmed completion.`,
+          workspace
+        }
+      }));
     } else {
       showMsg(`✅ Your completion recorded. Waiting for ${isProfessional ? workspace.customer_name : workspace.professional_name} to confirm.`);
     }
+    window.dispatchEvent(new Event('refresh_notifications'));
   };
 
   // ── Professional: Milestone actions ──────────────────────────────────────

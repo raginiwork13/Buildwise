@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import { 
   Building2, Sparkles, ChevronDown, User, Bell, Edit3, 
   ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn,
-  Crown, Zap, Shield
+  Crown, Zap, Shield, Package, X, Award
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { UserProfile } from '../types';
 import { ChangePlanModal } from './subscription/ChangePlanModal';
+
+interface NotificationItem {
+  id: string | number;
+  title: string;
+  desc: string;
+  time?: string;
+  unread: boolean;
+  type?: string;
+  recipient_role?: string;
+  created_at?: string;
+}
+
+const formatTimeAgo = (dateStr?: string) => {
+  if (!dateStr) return 'Just now';
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (isNaN(diff) || diff < 60) return 'Just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+};
 
 export const Navbar: React.FC = () => {
   const { 
@@ -25,17 +45,91 @@ export const Navbar: React.FC = () => {
 
   const userTier = (currentUser?.subscriptionTier || 'free') as 'free' | 'pro' | 'premium';
 
-  // Mock notifications for demonstration
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New Villa Lead in Porvorim', desc: 'Customer Rahul posted a 3,200 sq.ft residential project matching your area.', time: '10m ago', unread: true },
-    { id: 2, title: 'License Verification Approved', desc: 'Your PWD Class-1 certificate was verified by admin.', time: '1h ago', unread: true },
-    { id: 3, title: 'Supplier Price Update', desc: 'Mandovi Building Solutions updated UltraTech cement bag pricing.', time: '1d ago', unread: false }
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    { id: 'init-1', title: 'Welcome to BuildWise', desc: 'Real-time order tracking and supplier notifications are active.', time: 'Just now', unread: true, type: 'system' }
   ]);
+  const [toast, setToast] = useState<{ id: string; title: string; desc: string; type?: string } | null>(null);
+
+  const fetchNotifications = async () => {
+    try {
+      const activeRole = role || 'customer';
+      const res = await fetch(`http://localhost:8000/api/v1/notifications?role=${activeRole}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setNotifications(data.map((n: any) => ({
+            ...n,
+            time: formatTimeAgo(n.created_at)
+          })));
+        }
+      }
+    } catch {
+      // Backend fallback
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 4000);
+
+    const handleOrderPlaced = (e: any) => {
+      const detail = e.detail;
+      fetchNotifications();
+      // If current view is supplier, show immediate notification toast banner
+      if (role === 'supplier' && detail) {
+        setToast({
+          id: `toast-${Date.now()}`,
+          title: detail.title || '📦 Received Order',
+          desc: detail.desc || 'A consumer has placed a new building material order.',
+          type: 'order'
+        });
+      }
+    };
+
+    const handleProjectCompleted = (e: any) => {
+      const detail = e.detail;
+      fetchNotifications();
+      if (detail) {
+        setToast({
+          id: `toast-${Date.now()}`,
+          title: detail.title || '🏆 Project Completed!',
+          desc: detail.desc || 'Both consumer and professional have confirmed project completion.',
+          type: 'project'
+        });
+      }
+    };
+
+    window.addEventListener('supplier_order_placed', handleOrderPlaced);
+    window.addEventListener('project_completed', handleProjectCompleted);
+    window.addEventListener('refresh_notifications', fetchNotifications);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('supplier_order_placed', handleOrderPlaced);
+      window.removeEventListener('project_completed', handleProjectCompleted);
+      window.removeEventListener('refresh_notifications', fetchNotifications);
+    };
+  }, [role, currentUser]);
+
+  // Auto-dismiss toast after 6 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
     setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    try {
+      await fetch(`http://localhost:8000/api/v1/notifications/mark-all-read?role=${role || ''}`, {
+        method: 'PUT'
+      });
+    } catch {
+      // Offline fallback
+    }
   };
 
   const roleConfig = {
@@ -159,18 +253,28 @@ export const Navbar: React.FC = () => {
                   </div>
 
                   <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {notifications.map((n) => (
-                      <div 
-                        key={n.id} 
-                        className={`p-3 rounded-xl text-xs transition-colors ${n.unread ? 'bg-amber-50/70 border border-amber-100' : 'bg-slate-50'}`}
-                      >
-                        <div className="flex items-center justify-between font-bold text-slate-900 mb-0.5">
-                          <span>{n.title}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">{n.time}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-relaxed">{n.desc}</p>
+                    {notifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        No notifications yet.
                       </div>
-                    ))}
+                    ) : (
+                      notifications.map((n) => (
+                        <div 
+                          key={n.id} 
+                          className={`p-3 rounded-xl text-xs transition-colors ${n.unread ? 'bg-amber-50/70 border border-amber-200 shadow-2xs' : 'bg-slate-50'}`}
+                        >
+                          <div className="flex items-center justify-between font-bold text-slate-900 mb-0.5">
+                            <span className="flex items-center gap-1.5">
+                              {n.type === 'order' && <Package className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                              {n.type === 'project' && <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                              {n.title}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-normal shrink-0">{n.time}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5">{n.desc}</p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -417,6 +521,41 @@ export const Navbar: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Floating Real-Time Notification Toast */}
+      {toast && (
+        <div className={`fixed top-20 right-4 z-50 max-w-sm bg-slate-950 text-white rounded-2xl p-4 shadow-2xl border animate-in slide-in-from-top-4 flex items-start gap-3 backdrop-blur-md ${
+          toast.type === 'project' ? 'border-amber-500/50 shadow-amber-500/10' : 'border-emerald-500/50 shadow-emerald-500/10'
+        }`}>
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+            toast.type === 'project' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            {toast.type === 'project' ? (
+              <Award className="w-5 h-5 text-amber-400 animate-bounce" />
+            ) : (
+              <Package className="w-5 h-5 text-emerald-400 animate-bounce" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <span className={`font-black text-xs tracking-wide uppercase ${
+                toast.type === 'project' ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {toast.type === 'project' ? 'Milestone Milestone' : 'New Notification'}
+              </span>
+              <span className="text-[10px] text-slate-400">Just now</span>
+            </div>
+            <h4 className="font-bold text-sm text-white mt-0.5">{toast.title}</h4>
+            <p className="text-xs text-slate-300 mt-1 leading-relaxed">{toast.desc}</p>
+          </div>
+          <button 
+            onClick={() => setToast(null)} 
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Change / Upgrade Plan Modal */}
       <ChangePlanModal

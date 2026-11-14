@@ -42,6 +42,8 @@ class InMemoryDB:
         self.payment_milestones: Dict[str, Dict[str, Any]] = {}
         self.workspace_documents: Dict[str, Dict[str, Any]] = {}
         self.supplier_orders: Dict[str, Dict[str, Any]] = {}
+        self.notifications: Dict[str, Dict[str, Any]] = {}
+        self.enquiries: Dict[str, Dict[str, Any]] = {}
         self.platform_revenue_transactions: Dict[str, Dict[str, Any]] = {}
         self._seed_initial_data()
 
@@ -824,6 +826,56 @@ class InMemoryDB:
             "is_verified": True,
             "created_at": datetime.now(),
             "last_login_at": datetime.now()
+        }
+
+        # Seed initial notifications
+        self.notifications["notif-seed-1"] = {
+            "id": "notif-seed-1",
+            "title": "New Villa Lead in Porvorim",
+            "desc": "Customer Rahul posted a 3,200 sq.ft residential project matching your area.",
+            "recipient_role": "professional",
+            "recipient_id": "prof-carlos-1",
+            "recipient_name": "Carlos Fernandes",
+            "sender_name": "Rahul Naik",
+            "type": "enquiry",
+            "unread": True,
+            "created_at": datetime.now().isoformat()
+        }
+        self.notifications["notif-seed-2"] = {
+            "id": "notif-seed-2",
+            "title": "License Verification Approved",
+            "desc": "Your PWD Class-1 certificate was verified by admin.",
+            "recipient_role": "professional",
+            "recipient_id": "prof-carlos-1",
+            "recipient_name": "Carlos Fernandes",
+            "sender_name": "Admin",
+            "type": "system",
+            "unread": False,
+            "created_at": datetime.now().isoformat()
+        }
+        self.notifications["notif-seed-3"] = {
+            "id": "notif-seed-3",
+            "title": "Welcome to BuildWise Material Yard",
+            "desc": "Your supplier store is live. Consumers in Goa can now place direct orders for cement, steel, and stone.",
+            "recipient_role": "supplier",
+            "recipient_id": "demo-supp-1",
+            "recipient_name": "Sunil Silva",
+            "sender_name": "BuildWise Marketplace",
+            "type": "system",
+            "unread": True,
+            "created_at": datetime.now().isoformat()
+        }
+        self.notifications["notif-seed-4"] = {
+            "id": "notif-seed-4",
+            "title": "Welcome to BuildWise Goa",
+            "desc": "Explore verified contractors, architects, and order materials directly with site delivery.",
+            "recipient_role": "customer",
+            "recipient_id": "demo-cust-1",
+            "recipient_name": "Rahul Naik",
+            "sender_name": "BuildWise Team",
+            "type": "system",
+            "unread": True,
+            "created_at": datetime.now().isoformat()
         }
 
         # Seed Master Admin Account (Single Fixed Account)
