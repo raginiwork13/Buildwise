@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Search, MapPin, Phone, Mail, CheckCircle2, Crown, Zap, Building2, ExternalLink } from 'lucide-react';
+import { Truck, Search, MapPin, Phone, Mail, CheckCircle2, Crown, Zap, Building2, ExternalLink, ShoppingBag, Package } from 'lucide-react';
+import { useUser } from '../../context/UserContext';
+import { OrderProductModal } from '../../components/supplier/OrderProductModal';
+import type { OrderModalProduct } from '../../components/supplier/OrderProductModal';
+import { ViewOrdersModal } from '../../components/supplier/ViewOrdersModal';
 
 interface SupplierItem {
   id: string;
@@ -19,6 +23,8 @@ interface SupplierItem {
   city: string;
   pincode?: string;
   business_address?: string;
+  latitude?: number;
+  longitude?: number;
   primary_location: string;
   delivery_locations: string[];
   subscription_tier?: 'free' | 'pro' | 'premium';
@@ -27,10 +33,17 @@ interface SupplierItem {
 }
 
 export const SupplierMarketplacePage: React.FC = () => {
+  const { role } = useUser();
+  const isSupplier = role === 'supplier';
   const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
+
+  // Order modals
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState<OrderModalProduct | null>(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showViewOrdersModal, setShowViewOrdersModal] = useState(false);
 
   useEffect(() => {
     fetchSuppliers();
@@ -90,7 +103,7 @@ export const SupplierMarketplacePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Hero Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-xl border border-emerald-900/40 relative overflow-hidden">
           <div className="relative z-10 max-w-3xl">
@@ -112,6 +125,15 @@ export const SupplierMarketplacePage: React.FC = () => {
                 <Truck className="w-4 h-4" />
                 <span>List Your Business as Supplier</span>
               </Link>
+
+              {/* View Orders Button — Accessible to Suppliers, Customers and Pros */}
+              <button
+                onClick={() => setShowViewOrdersModal(true)}
+                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all backdrop-blur-sm cursor-pointer"
+              >
+                <Package className="w-4 h-4 text-emerald-400" />
+                <span>{isSupplier ? 'View Customer Orders & Shipments' : 'View Your Material Orders'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -170,16 +192,15 @@ export const SupplierMarketplacePage: React.FC = () => {
               return (
                 <div
                   key={supp.id}
-                  className={`bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-lg ${
-                    isPremium 
-                      ? 'border-indigo-300 ring-2 ring-indigo-500/10' 
-                      : isPro 
-                      ? 'border-emerald-300 ring-2 ring-emerald-500/10' 
-                      : 'border-slate-200'
-                  }`}
+                  className={`bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-lg ${isPremium
+                      ? 'border-indigo-300 ring-2 ring-indigo-500/10'
+                      : isPro
+                        ? 'border-emerald-300 ring-2 ring-emerald-500/10'
+                        : 'border-slate-200'
+                    }`}
                 >
                   <div className="p-6 space-y-4">
-                    
+
                     {/* Header: Logo, Badges */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -255,24 +276,83 @@ export const SupplierMarketplacePage: React.FC = () => {
                       </span>
                     </div>
 
+                    {/* Featured Products Showcase & Quick Order */}
+                    {supp.products && supp.products.length > 0 && (
+                      <div className="pt-2 border-t border-slate-100 space-y-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Featured Material Available:
+                        </span>
+                        {supp.products.slice(0, 2).map((p: any) => (
+                          <div key={p.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <img
+                                src={p.primary_image_url || 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=100&q=80'}
+                                alt={p.product_name}
+                                className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-900 truncate">{p.product_name}</div>
+                                <div className="text-[10px] text-emerald-700 font-extrabold">₹{p.indicative_price} / {p.unit_of_measurement || 'unit'}</div>
+                              </div>
+                            </div>
+
+                            {!isSupplier && (
+                              <button
+                                onClick={() => {
+                                  setSelectedProductForOrder({
+                                    ...p,
+                                    supplier_name: supp.company_name,
+                                    supplier_address: supp.business_address || `${supp.city}, ${supp.district}`,
+                                    supplier_latitude: supp.latitude || 15.3582,
+                                    supplier_longitude: supp.longitude || 73.9314
+                                  });
+                                  setShowOrderModal(true);
+                                }}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg cursor-pointer shrink-0 shadow-2xs"
+                              >
+                                Order
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                   </div>
 
                   {/* Card Footer CTA */}
-                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                    {!isSupplier && (
+                      <button
+                        onClick={() => {
+                          setSelectedProductForOrder({
+                            product_name: `${supp.company_name} - Direct Material Dispatch`,
+                            category: 'Cement & Building Supplies',
+                            indicative_price: 420,
+                            unit_of_measurement: 'bag / unit',
+                            primary_image_url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=500&q=80',
+                            supplier_id: supp.id,
+                            supplier_name: supp.company_name,
+                            supplier_address: supp.business_address || `${supp.city}, ${supp.district}`,
+                            supplier_latitude: supp.latitude || 15.3582,
+                            supplier_longitude: supp.longitude || 73.9314
+                          });
+                          setShowOrderModal(true);
+                        }}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Order Materials</span>
+                      </button>
+                    )}
+
                     <Link
                       to={`/suppliers/${supp.id}`}
-                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                      className="text-xs font-bold text-slate-700 hover:text-emerald-700 flex items-center gap-1"
                     >
-                      <span>View Catalogue</span>
+                      <span>Catalogue</span>
                       <ExternalLink className="w-3 h-3" />
                     </Link>
-
-                    <a
-                      href={`tel:${supp.phone}`}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
-                    >
-                      <Phone className="w-3 h-3" /> Call Supplier
-                    </a>
                   </div>
 
                 </div>
@@ -282,6 +362,27 @@ export const SupplierMarketplacePage: React.FC = () => {
         )}
 
       </div>
+
+      {/* --- ORDER MATERIAL MODAL --- */}
+      <OrderProductModal
+        isOpen={showOrderModal}
+        onClose={() => {
+          setShowOrderModal(false);
+          setSelectedProductForOrder(null);
+        }}
+        product={selectedProductForOrder}
+        onOrderSuccess={() => {
+          // Open the order tracking view after placing order
+          setTimeout(() => setShowViewOrdersModal(true), 300);
+        }}
+      />
+
+      {/* --- VIEW ORDERS & SHIPMENTS MODAL --- */}
+      <ViewOrdersModal
+        isOpen={showViewOrdersModal}
+        onClose={() => setShowViewOrdersModal(false)}
+      />
+
     </div>
   );
 };

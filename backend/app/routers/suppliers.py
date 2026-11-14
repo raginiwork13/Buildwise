@@ -51,7 +51,7 @@ def save_supplier_to_supabase(data: dict):
             safe_payload = {k: v for k, v in payload.items() if k in [
                 "id", "company_name", "logo_url", "description", "business_email", "phone", 
                 "website", "business_address", "primary_location", "delivery_locations", 
-                "is_published", "profile_completion_pct", "verification_status"
+                "is_published", "profile_completion_pct", "verification_status", "latitude", "longitude"
             ]}
             try:
                 res = supabase_client.table("supplier_profiles").upsert(safe_payload).execute()

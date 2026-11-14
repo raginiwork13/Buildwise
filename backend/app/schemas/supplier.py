@@ -79,6 +79,8 @@ class SupplierProfileBase(BaseModel):
     city: str = "Verna"
     pincode: Optional[str] = None
     business_address: Optional[str] = None
+    latitude: Optional[float] = 15.3582
+    longitude: Optional[float] = 73.9314
     primary_location: str = "Verna Industrial Estate, Goa"
     delivery_locations: List[str] = ["North Goa", "South Goa"]
     subscription_tier: str = "free"  # 'free' | 'pro' | 'premium'
@@ -104,6 +106,8 @@ class SupplierProfileUpdate(BaseModel):
     city: Optional[str] = None
     pincode: Optional[str] = None
     business_address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     primary_location: Optional[str] = None
     delivery_locations: Optional[List[str]] = None
     subscription_tier: Optional[str] = None

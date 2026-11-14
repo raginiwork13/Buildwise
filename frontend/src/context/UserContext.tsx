@@ -25,6 +25,7 @@ interface UserContextType {
   selectedRoleForModal: UserRole;
   setSelectedRoleForModal: (role: UserRole) => void;
   refreshAccounts: () => Promise<void>;
+  updateSubscriptionTier: (newTier: 'free' | 'pro' | 'premium') => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -269,6 +270,40 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateSubscriptionTier = async (newTier: 'free' | 'pro' | 'premium') => {
+    if (!currentUser) return;
+    const isSponsored = newTier === 'premium' || newTier === 'pro';
+    const updatedUser: UserProfile = {
+      ...currentUser,
+      subscriptionTier: newTier,
+      isSponsored
+    };
+
+    setCurrentUser(updatedUser);
+
+    setAccounts(prev =>
+      prev.map(a =>
+        a.email.toLowerCase() === currentUser.email.toLowerCase()
+          ? { ...a, subscriptionTier: newTier, isSponsored }
+          : a
+      )
+    );
+
+    try {
+      await fetch('http://localhost:8000/api/v1/auth/update-tier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: currentUser.email,
+          subscription_tier: newTier,
+          role: currentUser.role
+        })
+      });
+    } catch (err) {
+      console.warn('Backend update-tier notice:', err);
+    }
+  };
+
   const logout = () => {
     setCurrentUser(null);
   };
@@ -292,6 +327,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedRoleForModal,
         setSelectedRoleForModal,
         refreshAccounts,
+        updateSubscriptionTier,
       }}
     >
       {children}

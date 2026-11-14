@@ -13,11 +13,9 @@ import {
   X, 
   Loader2,
   Info,
-  Clock,
   ShieldCheck,
   CreditCard,
   Building2,
-  Award,
   Zap
 } from 'lucide-react';
 

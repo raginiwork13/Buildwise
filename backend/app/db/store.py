@@ -35,6 +35,13 @@ class InMemoryDB:
         self.project_interests: Dict[str, Dict[str, Any]] = {}
         self.chat_messages: Dict[str, Dict[str, Any]] = {}
         self.user_accounts: Dict[str, Dict[str, Any]] = {}
+        # Project Workspace collections
+        self.project_workspaces: Dict[str, Dict[str, Any]] = {}
+        self.project_milestones: Dict[str, Dict[str, Any]] = {}
+        self.progress_updates: Dict[str, Dict[str, Any]] = {}
+        self.payment_milestones: Dict[str, Dict[str, Any]] = {}
+        self.workspace_documents: Dict[str, Dict[str, Any]] = {}
+        self.supplier_orders: Dict[str, Dict[str, Any]] = {}
         self._seed_initial_data()
 
     def _seed_initial_data(self):
@@ -383,6 +390,8 @@ class InMemoryDB:
             "phone": "+91 98900 12345",
             "website": "https://mandovibuilding.in",
             "business_address": "Plot 42, Phase II, Verna Industrial Estate, Goa",
+            "latitude": 15.3582,
+            "longitude": 73.9314,
             "primary_location": "Verna Industrial Estate, South Goa",
             "delivery_locations": ["North Goa", "South Goa", "Panaji", "Margao", "Vasco", "Mapusa"],
             "is_published": True,
@@ -602,6 +611,154 @@ class InMemoryDB:
             "status": "submitted",
             "created_at": datetime.now(),
             "updated_at": datetime.now()
+        }
+
+        # ── Demo Project Workspace (Carlos x Rahul - Villa Project) ──────────────
+        ws_id = "ws-demo-1"
+        self.project_workspaces[ws_id] = {
+            "id": ws_id,
+            "project_id": "proj-c1",
+            "project_title": "4BHK Contemporary Portuguese Villa with Swimming Pool",
+            "customer_name": "Rahul Naik",
+            "professional_name": "Carlos Fernandes",
+            "professional_company": "Fernandes & Sons Civil Construction",
+            "agreed_amount": 8150000,
+            "expected_start_date": "2027-01-15",
+            "expected_completion_date": "2027-12-15",
+            "status": "active",
+            "overall_progress": 15,
+            "amount_paid": 1222500,
+            "start_confirmed_professional": True,
+            "start_confirmed_customer": True,
+            "completion_confirmed_professional": False,
+            "completion_confirmed_customer": False,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+        }
+
+        # Milestones for ws-demo-1
+        milestone_data = [
+            ("ms-d1", "Foundation & Plinth Work", "Excavation, footing, plinth beam casting, DPC treatment",
+             "2027-01-15", "2027-03-15", "in_progress", 60, 1222500, "2027-01-15"),
+            ("ms-d2", "Ground Floor RCC Structure", "Columns, beams, slab casting for ground floor",
+             "2027-03-16", "2027-05-30", "not_started", 0, 1832500, None),
+            ("ms-d3", "First Floor & Roof Slab", "First floor columns, beams, roof slab & waterproofing",
+             "2027-06-01", "2027-08-15", "not_started", 0, 1222500, None),
+            ("ms-d4", "Finishing Works", "Plastering, waterproofing, tiling, electrical & plumbing rough-in",
+             "2027-08-16", "2027-11-30", "not_started", 0, 2037500, None),
+            ("ms-d5", "Final Handover", "Painting, fixtures, landscaping & swimming pool completion",
+             "2027-12-01", "2027-12-15", "not_started", 0, 1832500, None),
+        ]
+        for mid, name, desc, ps, pe, status, pct, amt, actual_start in milestone_data:
+            self.project_milestones[mid] = {
+                "id": mid,
+                "workspace_id": ws_id,
+                "name": name,
+                "description": desc,
+                "planned_start": ps,
+                "planned_end": pe,
+                "actual_start": actual_start,
+                "actual_end": None,
+                "progress_percentage": pct,
+                "status": status,
+                "payment_amount": amt,
+                "photos": [],
+                "created_at": datetime.now().isoformat(),
+            }
+
+        # Progress Updates for ws-demo-1
+        self.progress_updates["upd-d1"] = {
+            "id": "upd-d1",
+            "workspace_id": ws_id,
+            "title": "Foundation Excavation Completed – Week 2",
+            "description": "Excavation work for all 6 footing locations completed as per drawing. Soil strata found suitable at -1.8m depth. PCC bed laid and curing in progress.",
+            "work_in_progress": "Footing reinforcement cage binding and form-work preparation",
+            "progress_percentage": 15,
+            "photos": [
+                "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
+                "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=400&q=80"
+            ],
+            "issues_or_delays": "Minor utility pipe found at north-west corner. Rerouting in coordination with PWD. No major schedule impact expected.",
+            "next_activities": "Footing reinforcement, shuttering, concrete pour (M25) for 6 footings",
+            "posted_by": "Carlos Fernandes",
+            "created_at": datetime.now().isoformat(),
+            "comments": [
+                {
+                    "id": "cmt-d1",
+                    "update_id": "upd-d1",
+                    "author": "Rahul Naik",
+                    "author_role": "customer",
+                    "text": "Good progress! Please send me site photos daily. When will the first concrete pour happen?",
+                    "created_at": datetime.now().isoformat(),
+                }
+            ]
+        }
+
+        # Payment Milestones for ws-demo-1
+        pmt_data = [
+            ("pmt-d1", "15% Advance / Mobilisation", 1222500, "paid", "2027-01-10", "2027-01-12", "NEFT/UPI-20270112"),
+            ("pmt-d2", "25% Foundation Completion", 2037500, "pending", "2027-03-20", None, ""),
+            ("pmt-d3", "30% Ground Floor Slab", 2445000, "upcoming", "2027-06-10", None, ""),
+            ("pmt-d4", "20% First Floor & Roof", 1630000, "upcoming", "2027-09-01", None, ""),
+            ("pmt-d5", "10% Final Handover", 815000, "upcoming", "2027-12-20", None, ""),
+        ]
+        for pid, name, amt, status, due, paid, ref in pmt_data:
+            self.payment_milestones[pid] = {
+                "id": pid,
+                "workspace_id": ws_id,
+                "name": name,
+                "amount": amt,
+                "status": status,
+                "due_date": due,
+                "paid_date": paid,
+                "reference": ref,
+            }
+
+        # Documents for ws-demo-1
+        self.workspace_documents["doc-d1"] = {
+            "id": "doc-d1",
+            "workspace_id": ws_id,
+            "filename": "Carlos_Villa_BOQ_Quotation_v1.pdf",
+            "category": "Approved Quotation",
+            "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+            "uploader": "Carlos Fernandes",
+            "uploaded_at": datetime.now().isoformat(),
+        }
+        self.workspace_documents["doc-d2"] = {
+            "id": "doc-d2",
+            "workspace_id": ws_id,
+            "filename": "Work_Agreement_Rahul_Carlos_Villa.pdf",
+            "category": "Work Agreement",
+            "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+            "uploader": "System",
+            "uploaded_at": datetime.now().isoformat(),
+        }
+
+        # Seed Demo Supplier Order
+        oid = "ord-demo-1"
+        self.supplier_orders[oid] = {
+            "id": oid,
+            "product_id": "prod-1",
+            "product_name": "UltraTech Weather Plus Cement (50kg)",
+            "product_category": "Cement",
+            "product_image": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=500&q=80",
+            "supplier_id": "supp-mandovi-1",
+            "supplier_name": "Mandovi Building Solutions & Steel Yard",
+            "supplier_address": "Plot 42, Verna Industrial Estate, Goa",
+            "customer_name": "Rahul Naik",
+            "customer_role": "customer",
+            "customer_tier": "pro",
+            "delivery_type": "home_delivery",
+            "delivery_address": "Villa #4, Borda, Margao, South Goa",
+            "distance_km": 12.0,
+            "delivery_fee": 360.0,
+            "quantity": 50,
+            "unit_price": 420.0,
+            "total_amount": 21360.0,
+            "status": "shipped",
+            "tracking_notes": "Dispatched via Tata 407 (GA-08-T-4521). Expected delivery today by 4 PM.",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
         }
 
         # Seed Chat Messages

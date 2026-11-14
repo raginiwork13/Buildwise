@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import type { SupplierProductItem } from '../../types/profile';
-import { CheckCircle2, XCircle, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, XCircle, ShoppingBag, Truck } from 'lucide-react';
 
 interface Props {
   product: SupplierProductItem;
+  supplierName?: string;
+  supplierAddress?: string;
+  onOrderClick?: (product: SupplierProductItem) => void;
 }
 
-export const ProductCard: React.FC<Props> = ({ product }) => {
+export const ProductCard: React.FC<Props> = ({ product, onOrderClick }) => {
   const [rfqSent, setRfqSent] = useState(false);
 
   return (
@@ -61,27 +64,37 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
         </div>
       </div>
 
-      <div className="p-4 pt-0">
-        <button
-          onClick={() => setRfqSent(true)}
-          className={`w-full py-2 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-            rfqSent
-              ? 'bg-emerald-600 text-white shadow-xs'
-              : 'bg-slate-900 hover:bg-slate-800 text-white'
-          }`}
-        >
-          {rfqSent ? (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>RFQ Inquiry Sent ✓</span>
-            </>
-          ) : (
-            <>
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Request Price Quote / RFQ</span>
-            </>
-          )}
-        </button>
+      <div className="p-4 pt-0 space-y-2">
+        {onOrderClick ? (
+          <button
+            onClick={() => onOrderClick(product)}
+            className="w-full py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          >
+            <Truck className="w-3.5 h-3.5" />
+            <span>Order Now (Delivery / Pickup)</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setRfqSent(true)}
+            className={`w-full py-2 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              rfqSent
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-900 hover:bg-slate-800 text-white'
+            }`}
+          >
+            {rfqSent ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>RFQ Inquiry Sent ✓</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Request Price Quote / RFQ</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
