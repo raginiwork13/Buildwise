@@ -477,8 +477,12 @@ export const CreateSupplierProfile: React.FC = () => {
               <span className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-emerald-600" /> 4. Primary Product for Marketplace
               </span>
-              <span className="text-[10px] text-emerald-800 bg-emerald-50 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Customer Ordering
+              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                userEstablishedTier === 'free' 
+                  ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              }`}>
+                {userEstablishedTier === 'free' ? 'Free Plan: 1 Product Maximum' : 'Pro / Premium: Unlimited Products'}
               </span>
             </h2>
 

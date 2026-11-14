@@ -323,6 +323,17 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
                     </div>
                   )}
 
+                  {/* Platform Business Model 2% Commission Notice */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-700 flex items-center justify-between">
+                    <span className="font-semibold text-slate-600 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Platform Business Model: <strong>2% Customer Fee</strong> upon dual-approval</span>
+                    </span>
+                    <span className="font-extrabold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      ₹{(quot.total_estimated_price * 0.02).toLocaleString('en-IN')} (2%)
+                    </span>
+                  </div>
+
                   {/* Action Buttons: Chat, Approve, Decline, Start Work */}
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
                     <button

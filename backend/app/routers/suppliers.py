@@ -179,7 +179,22 @@ def update_supplier(id: str, payload: SupplierProfileUpdate):
 @router.post("/{id}/products", response_model=SupplierProductResponse, status_code=201)
 def add_product(id: str, payload: SupplierProductCreate):
     if id not in db.supplier_profiles:
+        sync_suppliers_from_supabase()
+    if id not in db.supplier_profiles:
         raise HTTPException(status_code=404, detail="Supplier profile not found")
+    
+    supplier = db.supplier_profiles[id]
+    tier = (supplier.get("subscription_tier") or "free").lower().strip()
+
+    # Rule: Free tier supplier can only list 1 product. Pro & Premium have unlimited listings.
+    if tier == "free":
+        existing_products = [p for p in db.supplier_products.values() if p.get("supplier_id") == id]
+        if len(existing_products) >= 1:
+            raise HTTPException(
+                status_code=403,
+                detail="Free supplier profiles can list only 1 product. Please upgrade to Pro or Premium for unlimited product listings."
+            )
+
     prod_id = str(uuid.uuid4())
     now = datetime.now()
     data = payload.dict()
