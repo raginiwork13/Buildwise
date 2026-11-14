@@ -103,6 +103,7 @@ def send_message(payload: ChatMessageCreate):
 
     # Persist in-memory (always available)
     db.chat_messages[mid] = data
+    db.persist("chat_messages")
 
     # Persist to Supabase (best-effort)
     _save_to_supabase(data)
@@ -133,6 +134,7 @@ def mark_message_read(message_id: str):
     if message_id not in db.chat_messages:
         raise HTTPException(status_code=404, detail="Message not found")
     db.chat_messages[message_id]["is_read"] = True
+    db.persist("chat_messages")
     return {"ok": True}
 
 

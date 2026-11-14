@@ -1,8 +1,62 @@
 import os
+import json
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from app.config import settings
+
+# ─── Local JSON persistence helpers ──────────────────────────────────────────
+# Stored in backend/data/ so data survives server restarts (Supabase RLS fallback)
+_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+os.makedirs(_DATA_DIR, exist_ok=True)
+
+def _data_path(collection: str) -> str:
+    return os.path.join(_DATA_DIR, f"{collection}.json")
+
+def _load_collection(collection: str) -> dict:
+    path = _data_path(collection)
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[LocalDB] Failed to load {collection}: {e}")
+    return {}
+
+def _save_collection(collection: str, data: dict):
+    path = _data_path(collection)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, default=str, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[LocalDB] Failed to save {collection}: {e}")
+
+# Collections that are user-generated and should be persisted across restarts
+PERSISTED_COLLECTIONS = [
+    "user_accounts",
+    "professional_profiles",
+    "professional_services",
+    "professional_locations",
+    "portfolio_projects",
+    "portfolio_media",
+    "certifications",
+    "professional_reviews",
+    "supplier_profiles",
+    "supplier_products",
+    "customer_profiles",
+    "customer_projects",
+    "project_quotations",
+    "project_interests",
+    "chat_messages",
+    "notifications",
+    "supplier_orders",
+    "project_workspaces",
+    "project_milestones",
+    "progress_updates",
+    "payment_milestones",
+    "workspace_documents",
+    "platform_revenue_transactions",
+]
 
 # Initialize Supabase client if configured
 supabase_client = None
@@ -46,6 +100,26 @@ class InMemoryDB:
         self.enquiries: Dict[str, Dict[str, Any]] = {}
         self.platform_revenue_transactions: Dict[str, Dict[str, Any]] = {}
         self._seed_initial_data()
+        self._load_persisted_data()
+
+    def _load_persisted_data(self):
+        """
+        Load user-created data from local JSON files and merge it on top of
+        seed data. User records (by id/key) override seeds with the same key,
+        but seed data fills in anything missing.
+        """
+        for col in PERSISTED_COLLECTIONS:
+            saved = _load_collection(col)
+            if saved:
+                target: dict = getattr(self, col, {})
+                target.update(saved)
+                setattr(self, col, target)
+        print(f"[LocalDB] Persistent data loaded from {_DATA_DIR}")
+
+    def persist(self, collection: str):
+        """Call this whenever a user-generated record is added/changed."""
+        data = getattr(self, collection, {})
+        _save_collection(collection, data)
 
     def _seed_initial_data(self):
         # Seed 1 Professional (Carlos Fernandes - Premium)

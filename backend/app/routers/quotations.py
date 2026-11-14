@@ -87,6 +87,7 @@ def create_quotation(payload: QuotationCreate):
 
     db.project_quotations[qid] = data
     save_quotation_to_supabase(data)
+    db.persist("project_quotations")
 
     # Increment project enquiry count if project exists
     proj_id = data.get("project_id")
@@ -202,6 +203,7 @@ def update_quotation_status(id: str, payload: QuotationUpdate):
         current["notes"] = payload.notes
     current["updated_at"] = datetime.now().isoformat()
     db.project_quotations[id] = current
+    db.persist("project_quotations")
 
     if supabase_client:
         try:

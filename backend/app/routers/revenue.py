@@ -137,6 +137,7 @@ def record_project_commission(payload: CollectRevenueRequest):
         db.platform_revenue_transactions = {}
 
     db.platform_revenue_transactions[rid] = data
+    db.persist("platform_revenue_transactions")
     save_revenue_to_supabase(data)
 
     return {

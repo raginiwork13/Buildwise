@@ -146,6 +146,25 @@ def create_professional(payload: ProfessionalProfileCreate):
         db.professional_locations[lid] = l
         save_to_supabase_safe("professional_locations", l)
 
+    # Persist locally so profile survives server restarts
+    db.persist("professional_profiles")
+    db.persist("professional_services")
+    db.persist("professional_locations")
+
+    # Record subscription revenue if registering with pro or premium
+    tier = (data.get("subscription_tier") or "free").lower().strip()
+    if tier in ["pro", "premium"]:
+        try:
+            from app.routers.auth import record_subscription_revenue
+            record_subscription_revenue(
+                email=data.get("email") or f"{pid}@example.com",
+                role="professional",
+                tier=tier,
+                full_name=data.get("full_name")
+            )
+        except Exception as e:
+            print(f"Subscription revenue recording error for professional: {e}")
+
     return assemble_profile(data)
 
 class AISearchRequest(BaseModel):

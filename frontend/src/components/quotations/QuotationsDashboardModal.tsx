@@ -60,17 +60,48 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
       if (res.ok) {
         const data = await res.json();
         setQuotations(data);
-        return; // success — no fallback needed
+      } else {
+        // Server returned an error (e.g. 404, 500) — use demo data
+        console.warn('Quotations API returned', res.status, '— using demo data');
+        setQuotations([
+          {
+            id: 'quot-1',
+            project_id: 'proj-c1',
+            project_title: 'Coastal RCC Structural Retrofitting & Saline Waterproofing',
+            customer_name: 'Sunita Borkar',
+            provider_id: 'prof-carlos-1',
+            provider_name: 'Carlos Fernandes',
+            provider_role: 'professional',
+            provider_company: 'Fernandes & Sons Civil Construction',
+            total_estimated_price: 1800000.0,
+            expected_completion_time: '10 Months',
+            document_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            document_filename: 'Carlos_Structural_Retrofit_Quotation_BOQ.pdf',
+            notes: 'Includes full structural audit, epoxy jacketing, and saline waterproofing with 5-year guarantee.',
+            status: 'submitted'
+          },
+          {
+            id: 'quot-2',
+            project_id: 'proj-c1',
+            project_title: '4BHK Contemporary Portuguese Villa with Swimming Pool',
+            customer_name: 'Rahul Naik',
+            provider_id: 'prof-ananya-2',
+            provider_name: 'Ar. Ananya Deshmukh',
+            provider_role: 'professional',
+            provider_company: 'Atelier Goa Architecture',
+            total_estimated_price: 680000.0,
+            expected_completion_time: '3 Months for Blueprints & CRZ Clearances',
+            document_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            document_filename: 'Ananya_Villa_Architectural_Proposal.pdf',
+            notes: 'Architectural drawings, structural engineering consultancy, and Panchayat NOC submission filings.',
+            status: 'submitted'
+          }
+        ]);
       }
-      // Server returned an error (e.g. 404, 500) — fall through to demo data
-      console.warn('Quotations API returned', res.status, '— using demo data');
     } catch (err) {
-      // Network error (backend offline) — fall through to demo data
+      // Network error (backend offline) — use demo data
       console.warn('Quotations API unreachable:', err);
-    }
-
-    // Demo initial quotations fallback with downloadable documents
-    setQuotations([
+      setQuotations([
         {
           id: 'quot-1',
           project_id: 'proj-c1',

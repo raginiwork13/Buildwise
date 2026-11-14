@@ -77,6 +77,7 @@ def record_subscription_revenue(email: str, role: str, tier: str, full_name: Opt
         db.platform_revenue_transactions = {}
 
     db.platform_revenue_transactions[tx_id] = tx_data
+    db.persist("platform_revenue_transactions")
     if supabase_client:
         try:
             supabase_client.table("platform_revenue_transactions").upsert(tx_data).execute()
@@ -101,6 +102,9 @@ def register(payload: UserRegisterRequest):
 
     # Store in Supabase
     save_account_to_supabase(data)
+
+    # Persist locally so data survives server restarts
+    db.persist("user_accounts")
 
     # Record subscription revenue if registering with pro or premium
     tier = (payload.subscription_tier or "free").lower().strip()
@@ -220,6 +224,7 @@ def login(payload: UserLoginRequest):
     }
     db.user_accounts[email] = new_acct
     save_account_to_supabase(new_acct)
+    db.persist("user_accounts")
     return new_acct
 
 @router.get("/accounts", response_model=List[UserAccountResponse])
@@ -261,6 +266,7 @@ def update_user_tier(payload: UpdateTierRequest):
 
     db.user_accounts[email] = account
     save_account_to_supabase(account)
+    db.persist("user_accounts")
 
     # Record subscription revenue when upgrading/changing to pro or premium
     if tier in ["pro", "premium"]:
