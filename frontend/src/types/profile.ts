@@ -129,6 +129,8 @@ export interface SupplierProfileFull {
   phone: string;
   website?: string;
   business_address?: string;
+  latitude?: number;
+  longitude?: number;
   primary_location: string;
   delivery_locations: string[];
   is_published: boolean;

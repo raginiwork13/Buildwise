@@ -13,6 +13,8 @@ class CustomerProfileBase(BaseModel):
     pincode: Optional[str] = None
     full_address: Optional[str] = None
     customer_type: str = "Individual / Homeowner"  # "Individual / Homeowner" | "Property developer" | "Company / Organisation" | "Other"
+    subscription_tier: str = "free"  # 'free' | 'pro' | 'premium'
+    is_sponsored: bool = False
 
 class CustomerProfileCreate(CustomerProfileBase):
     pass

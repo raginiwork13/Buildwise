@@ -1,8 +1,28 @@
 import os
+import sys
 import joblib
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 from app.schemas.estimator import CostEstimateRequest, CostEstimateResponse
+
+# --- Cross-version compatibility shim for scikit-learn models ---
+try:
+    import sklearn._loss
+    import sklearn.compose._column_transformer
+
+    # RemainderColsList alias
+    if not hasattr(sklearn.compose._column_transformer, '_RemainderColsList'):
+        class _RemainderColsList(list):
+            pass
+        sklearn.compose._column_transformer._RemainderColsList = _RemainderColsList
+
+    # _loss module alias for unpickling
+    sys.modules['_loss'] = sklearn._loss
+    if hasattr(sklearn._loss, 'HalfSquaredError') and not hasattr(sklearn._loss, 'CyHalfSquaredError'):
+        sklearn._loss.CyHalfSquaredError = sklearn._loss.HalfSquaredError
+except Exception as bridge_err:
+    print(f"Notice: sklearn bridge notice: {bridge_err}")
+# ----------------------------------------------------------------
 
 router = APIRouter(prefix="/cost-estimator", tags=["AI Cost Estimator"])
 

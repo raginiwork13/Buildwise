@@ -11,17 +11,20 @@ class QuotationBase(BaseModel):
     provider_name: str
     provider_role: str = "professional"  # 'professional' | 'supplier'
     provider_company: Optional[str] = None
-    total_estimated_price: float
+    total_estimated_price: float = 0.0
     material_costs: float = 0.0
     labour_costs: float = 0.0
     transport_charges: float = 0.0
     service_charges: float = 0.0
-    expected_completion_time: str
+    expected_completion_time: Optional[str] = "As per document"
     payment_milestones: Optional[str] = None
     materials_included: Optional[str] = None
     materials_excluded: Optional[str] = None
     terms_and_conditions: Optional[str] = None
     quotation_validity_days: int = 30
+    document_url: Optional[str] = None
+    document_filename: Optional[str] = None
+    notes: Optional[str] = None
     status: str = "submitted"  # 'submitted' | 'approved' | 'rejected' | 'work_started'
 
 class QuotationCreate(QuotationBase):

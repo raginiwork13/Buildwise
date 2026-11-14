@@ -22,6 +22,7 @@ export const RegistrationModal: React.FC = () => {
   const [customerPincode, setCustomerPincode] = useState('403001');
   const [customerFullAddress, setCustomerFullAddress] = useState('');
   const [customerType, setCustomerType] = useState('Individual / Homeowner');
+  const [customerTier, setCustomerTier] = useState<'free' | 'pro' | 'premium'>('pro');
 
   // Professional fields
   const [companyName, setCompanyName] = useState('');
@@ -41,6 +42,18 @@ export const RegistrationModal: React.FC = () => {
   const [supplierPincode] = useState('403722');
   const [supplierAddress, setSupplierAddress] = useState('');
   const [supplierTier, setSupplierTier] = useState<'free' | 'pro' | 'premium'>('pro');
+  // Supplier GPS coordinates
+  const [supplierLat, setSupplierLat] = useState(15.3582);
+  const [supplierLng, setSupplierLng] = useState(73.9314);
+  const [detectingGps, setDetectingGps] = useState(false);
+  const [gpsSuccessMsg, setGpsSuccessMsg] = useState<string | null>(null);
+
+  // New Product being sold by supplier
+  const [productName, setProductName] = useState('UltraTech Weather Plus Cement (50kg)');
+  const [productCategory, setProductCategory] = useState('Cement');
+  const [productPrice, setProductPrice] = useState(420);
+  const [productUnit, setProductUnit] = useState('bag');
+  const [productImageUrl, setProductImageUrl] = useState('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=500&q=80');
 
   if (!openRegisterModal) return null;
 
@@ -63,7 +76,9 @@ export const RegistrationModal: React.FC = () => {
           city: customerCity,
           pincode: customerPincode,
           full_address: customerFullAddress || undefined,
-          customer_type: customerType
+          customer_type: customerType,
+          subscription_tier: customerTier,
+          is_sponsored: customerTier === 'premium' || customerTier === 'pro'
         };
 
         try {
@@ -84,8 +99,8 @@ export const RegistrationModal: React.FC = () => {
           city: customerCity,
           locationDistrict: customerDistrict,
           defaultLocation: `${customerCity}, ${customerDistrict}`,
-          subscriptionTier: 'free',
-          isSponsored: false
+          subscriptionTier: customerTier,
+          isSponsored: customerTier === 'premium' || customerTier === 'pro'
         });
 
         // Navigate directly to Projects page where all customer projects are displayed
@@ -107,6 +122,8 @@ export const RegistrationModal: React.FC = () => {
           city: supplierCity,
           pincode: supplierPincode,
           business_address: supplierAddress || `${supplierCity}, ${supplierDistrict}, Goa`,
+          latitude: supplierLat,
+          longitude: supplierLng,
           primary_location: `${supplierCity}, ${supplierDistrict}`,
           delivery_locations: ['North Goa', 'South Goa'],
           subscription_tier: supplierTier,
@@ -115,11 +132,30 @@ export const RegistrationModal: React.FC = () => {
         };
 
         try {
-          await fetch('http://localhost:8000/api/v1/suppliers', {
+          const suppRes = await fetch('http://localhost:8000/api/v1/suppliers', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
+
+          if (suppRes.ok && productName.trim()) {
+            const suppData = await suppRes.json();
+            // Also register their product in database
+            await fetch(`http://localhost:8000/api/v1/suppliers/${suppData.id}/products`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                product_name: productName,
+                category: productCategory,
+                description: `High-grade ${productCategory} supplied by ${sName}. Available for home delivery and yard pickup across Goa.`,
+                unit_of_measurement: productUnit,
+                indicative_price: Number(productPrice) || 400,
+                in_stock: true,
+                delivery_available: true,
+                primary_image_url: productImageUrl
+              })
+            }).catch(() => { });
+          }
         } catch (err) {
           console.warn('Backend offline, registered in local session', err);
         }
@@ -198,16 +234,16 @@ export const RegistrationModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-        
+
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 p-6 text-white relative">
-          <button 
+          <button
             onClick={() => setOpenRegisterModal(false)}
             className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
-          
+
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> Zero-Password Registration
@@ -223,7 +259,7 @@ export const RegistrationModal: React.FC = () => {
             ⚡ Quick Demo Switch:
           </span>
           <div className="flex gap-2">
-            <button 
+            <button
               type="button"
               onClick={() => handleQuickSelectDemo('customer')}
               className="hover:underline font-semibold text-amber-800 cursor-pointer"
@@ -231,7 +267,7 @@ export const RegistrationModal: React.FC = () => {
               Customer
             </button>
             <span>•</span>
-            <button 
+            <button
               type="button"
               onClick={() => handleQuickSelectDemo('professional')}
               className="hover:underline font-semibold text-amber-800 cursor-pointer"
@@ -239,7 +275,7 @@ export const RegistrationModal: React.FC = () => {
               Professional
             </button>
             <span>•</span>
-            <button 
+            <button
               type="button"
               onClick={() => handleQuickSelectDemo('supplier')}
               className="hover:underline font-semibold text-amber-800 cursor-pointer"
@@ -251,7 +287,7 @@ export const RegistrationModal: React.FC = () => {
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-          
+
           {/* Step 1: Role Selection Cards */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
@@ -261,15 +297,13 @@ export const RegistrationModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedRoleForModal('customer')}
-                className={`p-3 rounded-xl border-2 text-left flex flex-col justify-between transition-all cursor-pointer ${
-                  selectedRoleForModal === 'customer'
+                className={`p-3 rounded-xl border-2 text-left flex flex-col justify-between transition-all cursor-pointer ${selectedRoleForModal === 'customer'
                     ? 'border-amber-500 bg-amber-50/40 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                  }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
-                  selectedRoleForModal === 'customer' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${selectedRoleForModal === 'customer' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
                   <Home className="w-4 h-4" />
                 </div>
                 <div>
@@ -281,15 +315,13 @@ export const RegistrationModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedRoleForModal('professional')}
-                className={`p-3 rounded-xl border-2 text-left flex flex-col justify-between transition-all cursor-pointer ${
-                  selectedRoleForModal === 'professional'
+                className={`p-3 rounded-xl border-2 text-left flex flex-col justify-between transition-all cursor-pointer ${selectedRoleForModal === 'professional'
                     ? 'border-amber-500 bg-amber-50/40 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                  }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
-                  selectedRoleForModal === 'professional' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${selectedRoleForModal === 'professional' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
                   <HardHat className="w-4 h-4" />
                 </div>
                 <div>
@@ -301,15 +333,13 @@ export const RegistrationModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedRoleForModal('supplier')}
-                className={`p-3 rounded-xl border-2 text-left flex flex-col justify-between transition-all cursor-pointer ${
-                  selectedRoleForModal === 'supplier'
+                className={`p-3 rounded-xl border-2 text-left flex flex-col justify-between transition-all cursor-pointer ${selectedRoleForModal === 'supplier'
                     ? 'border-amber-500 bg-amber-50/40 shadow-sm'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
-                }`}
+                  }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
-                  selectedRoleForModal === 'supplier' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${selectedRoleForModal === 'supplier' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
                   <Truck className="w-4 h-4" />
                 </div>
                 <div>
@@ -449,8 +479,56 @@ export const RegistrationModal: React.FC = () => {
                 />
               </div>
 
+              {/* Customer Subscription Tier Selection */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  Customer Membership Tier
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div
+                    onClick={() => setCustomerTier('free')}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all ${customerTier === 'free' ? 'border-slate-800 bg-white ring-1 ring-slate-800' : 'border-slate-200 bg-slate-50'
+                      }`}
+                  >
+                    <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
+                      <span>Free (₹0)</span>
+                      {customerTier === 'free' && <CheckCircle2 className="w-3.5 h-3.5 text-slate-900" />}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">Post 1 project • Standard bids</div>
+                  </div>
+
+                  <div
+                    onClick={() => setCustomerTier('pro')}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all ${customerTier === 'pro' ? 'border-amber-600 bg-amber-50/50 ring-1 ring-amber-600' : 'border-slate-200 bg-slate-50'
+                      }`}
+                  >
+                    <div className="font-bold text-xs text-amber-900 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-amber-600" /> Pro (₹499)
+                      </span>
+                      {customerTier === 'pro' && <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />}
+                    </div>
+                    <div className="text-[10px] text-amber-700 mt-0.5">Unlimited projects • Fast bids</div>
+                  </div>
+
+                  <div
+                    onClick={() => setCustomerTier('premium')}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all ${customerTier === 'premium' ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600' : 'border-slate-200 bg-slate-50'
+                      }`}
+                  >
+                    <div className="font-bold text-xs text-indigo-950 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-indigo-600" /> Premium (₹999)
+                      </span>
+                      {customerTier === 'premium' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                    </div>
+                    <div className="text-[10px] text-indigo-700 mt-0.5">Dedicated PM • AI Cost review</div>
+                  </div>
+                </div>
+              </div>
+
               <p className="text-[11px] text-slate-500 bg-white p-2 rounded-lg border border-slate-200">
-                🔒 <strong>Privacy Note:</strong> Customer profiles are confidential and not listed on public marketplace directories. Data is securely stored in Supabase.
+                🔒 <strong>Privacy Note:</strong> Customer profiles are confidential and not listed on public marketplace directories. Membership tier is securely stored in Supabase.
               </p>
             </div>
           )}
@@ -543,6 +621,112 @@ export const RegistrationModal: React.FC = () => {
                 />
               </div>
 
+              {/* GPS Depot Coordinates Button */}
+              <div className="p-2.5 bg-amber-50/60 rounded-lg border border-amber-200/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-800">
+                    📍 Yard GPS Coordinates (Delivery Costing)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!navigator.geolocation) return;
+                      setDetectingGps(true);
+                      navigator.geolocation.getCurrentPosition(
+                        pos => {
+                          const lat = parseFloat(pos.coords.latitude.toFixed(6));
+                          const lng = parseFloat(pos.coords.longitude.toFixed(6));
+                          setSupplierLat(lat);
+                          setSupplierLng(lng);
+                          setDetectingGps(false);
+                          setGpsSuccessMsg(`GPS set: ${lat}°, ${lng}°`);
+                        },
+                        () => {
+                          setDetectingGps(false);
+                          setGpsSuccessMsg('Set to Goa Verna depot default');
+                        },
+                        { timeout: 8000 }
+                      );
+                    }}
+                    className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold cursor-pointer"
+                  >
+                    {detectingGps ? 'Locating...' : '📍 Auto-Detect GPS'}
+                  </button>
+                </div>
+                <div className="text-[10px] font-mono text-slate-600 flex justify-between items-center">
+                  <span>{supplierLat}° N, {supplierLng}° E</span>
+                  {gpsSuccessMsg && <span className="text-emerald-700 font-bold">{gpsSuccessMsg}</span>}
+                </div>
+              </div>
+
+              {/* Supplier Product Input: Cement, Steel, Sand, etc. */}
+              <div className="pt-2 border-t border-slate-200 space-y-2.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Primary Product for Marketplace
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Product Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. UltraTech Weather Plus Cement"
+                      value={productName}
+                      onChange={e => setProductName(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Category *</label>
+                    <select
+                      value={productCategory}
+                      onChange={e => setProductCategory(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    >
+                      <option value="Cement">Cement</option>
+                      <option value="Steel & TMT">Steel & TMT</option>
+                      <option value="Stone & Sand">Stone & Sand</option>
+                      <option value="Pipes & Plumbing">Pipes & Plumbing</option>
+                      <option value="Bricks & Blocks">Bricks & Blocks</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Price (₹) & Unit *</label>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        placeholder="420"
+                        value={productPrice}
+                        onChange={e => setProductPrice(Number(e.target.value))}
+                        className="w-2/3 px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="bag"
+                        value={productUnit}
+                        onChange={e => setProductUnit(e.target.value)}
+                        className="w-1/3 px-2 py-1.5 text-xs rounded-lg border border-slate-300 text-center"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Product Photo URL (optional)</label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={productImageUrl}
+                      onChange={e => setProductImageUrl(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Plan Selection */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
@@ -551,27 +735,24 @@ export const RegistrationModal: React.FC = () => {
                 <div className="grid grid-cols-3 gap-2">
                   <div
                     onClick={() => setSupplierTier('free')}
-                    className={`p-2 rounded-xl border-2 cursor-pointer ${
-                      supplierTier === 'free' ? 'border-slate-800 bg-white' : 'border-slate-200 bg-slate-50'
-                    }`}
+                    className={`p-2 rounded-xl border-2 cursor-pointer ${supplierTier === 'free' ? 'border-slate-800 bg-white' : 'border-slate-200 bg-slate-50'
+                      }`}
                   >
                     <div className="font-bold text-xs text-slate-900">Free (₹0)</div>
                     <div className="text-[10px] text-slate-500">Standard listing</div>
                   </div>
                   <div
                     onClick={() => setSupplierTier('pro')}
-                    className={`p-2 rounded-xl border-2 cursor-pointer ${
-                      supplierTier === 'pro' ? 'border-emerald-600 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'
-                    }`}
+                    className={`p-2 rounded-xl border-2 cursor-pointer ${supplierTier === 'pro' ? 'border-emerald-600 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'
+                      }`}
                   >
                     <div className="font-bold text-xs text-emerald-800">Pro (₹299/mo)</div>
                     <div className="text-[10px] text-emerald-700">Sponsored badge</div>
                   </div>
                   <div
                     onClick={() => setSupplierTier('premium')}
-                    className={`p-2 rounded-xl border-2 cursor-pointer ${
-                      supplierTier === 'premium' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 bg-slate-50'
-                    }`}
+                    className={`p-2 rounded-xl border-2 cursor-pointer ${supplierTier === 'premium' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 bg-slate-50'
+                      }`}
                   >
                     <div className="font-bold text-xs text-indigo-900">Premium (₹799/mo)</div>
                     <div className="text-[10px] text-indigo-700">Top ranking</div>
@@ -672,11 +853,10 @@ export const RegistrationModal: React.FC = () => {
                 <div className="grid grid-cols-3 gap-2.5">
                   <div
                     onClick={() => setSubscriptionTier('free')}
-                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all ${
-                      subscriptionTier === 'free'
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all ${subscriptionTier === 'free'
                         ? 'border-slate-800 bg-white ring-2 ring-slate-800/10'
                         : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-slate-800">Free</span>
@@ -688,11 +868,10 @@ export const RegistrationModal: React.FC = () => {
 
                   <div
                     onClick={() => setSubscriptionTier('pro')}
-                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all relative ${
-                      subscriptionTier === 'pro'
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all relative ${subscriptionTier === 'pro'
                         ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-500/20'
                         : 'border-slate-200 bg-slate-50/50 hover:border-amber-200'
-                    }`}
+                      }`}
                   >
                     <span className="absolute -top-2 right-2 bg-amber-500 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
                       Popular
@@ -707,11 +886,10 @@ export const RegistrationModal: React.FC = () => {
 
                   <div
                     onClick={() => setSubscriptionTier('premium')}
-                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all relative ${
-                      subscriptionTier === 'premium'
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer transition-all relative ${subscriptionTier === 'premium'
                         ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20'
                         : 'border-slate-200 bg-slate-50/50 hover:border-indigo-200'
-                    }`}
+                      }`}
                   >
                     <span className="absolute -top-2 right-2 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
                       Top #1
@@ -746,11 +924,11 @@ export const RegistrationModal: React.FC = () => {
                 <>
                   <CheckCircle2 className="w-4 h-4" />
                   <span>
-                    {selectedRoleForModal === 'customer' 
-                      ? 'Save Customer Profile & Activate' 
+                    {selectedRoleForModal === 'customer'
+                      ? 'Save Customer Profile & Activate'
                       : selectedRoleForModal === 'supplier'
-                      ? 'Publish Supplier Profile & View in Marketplace'
-                      : 'Publish Professional Profile & View in Marketplace'}
+                        ? 'Publish Supplier Profile & View in Marketplace'
+                        : 'Publish Professional Profile & View in Marketplace'}
                   </span>
                 </>
               )}

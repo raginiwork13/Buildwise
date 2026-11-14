@@ -1,41 +1,105 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, CheckCircle2, ArrowRight, Shield, Zap, Crown, Building2, MapPin, Mail, Sparkles } from 'lucide-react';
+import { Truck, CheckCircle2, ArrowRight, Building2, MapPin, Mail, Info, Navigation, Crosshair } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 export const CreateSupplierProfile: React.FC = () => {
   const navigate = useNavigate();
-  const { registerUser } = useUser();
+  const { registerUser, currentUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gpsDetecting, setGpsDetecting] = useState(false);
+  const [gpsMessage, setGpsMessage] = useState<string | null>(null);
+
+  // Known Goa Location Coordinates Reference
+  const GOA_TOWN_COORDINATES: Record<string, { lat: number; lng: number }> = {
+    'verna': { lat: 15.3582, lng: 73.9314 },
+    'margao': { lat: 15.2832, lng: 73.9862 },
+    'panaji': { lat: 15.4909, lng: 73.8278 },
+    'mapusa': { lat: 15.5937, lng: 73.8142 },
+    'porvorim': { lat: 15.5353, lng: 73.8291 },
+    'vasco': { lat: 15.3995, lng: 73.8122 },
+    'ponda': { lat: 15.4026, lng: 74.0086 },
+    'bicholim': { lat: 15.5947, lng: 73.9537 },
+    'canacona': { lat: 15.0069, lng: 74.0450 }
+  };
+
+  // Use subscription tier established during user registration
+  const userEstablishedTier = (currentUser?.subscriptionTier || 'pro') as 'free' | 'pro' | 'premium';
 
   // Form State matching exact user requirements
   const [formData, setFormData] = useState({
     // Business information
-    company_name: '',
-    contact_person_name: '',
+    company_name: currentUser?.businessName || '',
+    contact_person_name: currentUser?.fullName || '',
     business_type: 'Individual proprietor',
     year_of_establishment: 2018,
     description: '',
     logo_url: '',
     
     // Contact information
-    business_email: '',
-    phone: '',
+    business_email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
     alt_phone: '',
     website: '',
     
     // Business location
     state: 'Goa',
-    district: 'South Goa',
-    city: 'Verna',
+    district: currentUser?.locationDistrict || 'South Goa',
+    city: currentUser?.city || 'Verna',
     pincode: '403722',
     business_address: '',
+    latitude: 15.3582,
+    longitude: 73.9314,
     
-    // Marketplace tier
-    subscription_tier: 'pro' as 'free' | 'pro' | 'premium',
-    is_sponsored: true
+    // Inherited from registration
+    subscription_tier: userEstablishedTier,
+    is_sponsored: userEstablishedTier === 'premium' || userEstablishedTier === 'pro',
+
+    // Primary Product
+    product_name: 'UltraTech Weather Plus Cement (50kg)',
+    product_category: 'Cement',
+    indicative_price: 420,
+    unit_of_measurement: 'bag',
+    primary_image_url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=500&q=80'
   });
+
+  const detectSupplierGPS = () => {
+    if (!navigator.geolocation) {
+      setGpsMessage('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setGpsDetecting(true);
+    setGpsMessage(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = parseFloat(position.coords.latitude.toFixed(6));
+        const lng = parseFloat(position.coords.longitude.toFixed(6));
+        setFormData(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng
+        }));
+        setGpsDetecting(false);
+        setGpsMessage(`Captured live GPS: ${lat}°, ${lng}°`);
+      },
+      (err) => {
+        setGpsDetecting(false);
+        // Fallback to Goa town preset
+        const cityKey = (formData.city || 'verna').trim().toLowerCase();
+        const fallback = GOA_TOWN_COORDINATES[cityKey] || GOA_TOWN_COORDINATES['verna'];
+        setFormData(prev => ({
+          ...prev,
+          latitude: fallback.lat,
+          longitude: fallback.lng
+        }));
+        setGpsMessage(`Using ${formData.city || 'Verna'} coordinates: ${fallback.lat}°, ${fallback.lng}° (${err.message})`);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -70,7 +134,26 @@ export const CreateSupplierProfile: React.FC = () => {
       });
 
       if (res.ok) {
-        await res.json();
+        const suppData = await res.json();
+
+        // Also add their product
+        if (formData.product_name) {
+          await fetch(`http://localhost:8000/api/v1/suppliers/${suppData.id}/products`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              product_name: formData.product_name,
+              category: formData.product_category,
+              description: `High-quality ${formData.product_category} available for immediate delivery from ${formData.company_name}.`,
+              unit_of_measurement: formData.unit_of_measurement,
+              indicative_price: Number(formData.indicative_price) || 420,
+              in_stock: true,
+              delivery_available: true,
+              primary_image_url: formData.primary_image_url
+            })
+          }).catch(() => {});
+        }
+
         // Update user session
         registerUser({
           role: 'supplier',
@@ -346,72 +429,159 @@ export const CreateSupplierProfile: React.FC = () => {
                 className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
+
+            {/* GPS Yard Coordinates Detector */}
+            <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Crosshair className="w-4 h-4 text-emerald-600" />
+                    <span>Depot / Yard GPS Coordinates (for Delivery Estimation)</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Used to calculate exact road distance and delivery charges when customers place orders.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={detectSupplierGPS}
+                  disabled={gpsDetecting}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>{gpsDetecting ? 'Detecting GPS...' : '📍 Auto-Detect Yard GPS'}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs font-mono bg-white p-2 rounded-lg border border-emerald-100">
+                <span className="text-slate-600">Latitude: <strong className="text-emerald-700">{formData.latitude}° N</strong></span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-600">Longitude: <strong className="text-emerald-700">{formData.longitude}° E</strong></span>
+                <span className="ml-auto text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                  GPS Active
+                </span>
+              </div>
+
+              {gpsMessage && (
+                <p className="text-[11px] text-emerald-800 font-medium">
+                  ✓ {gpsMessage}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Section 4: Subscription Tier Selection */}
+          {/* Section 4: Primary Product Details */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
               <span className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-600" /> 4. Supplier Marketplace Plan
+                <Building2 className="w-4 h-4 text-emerald-600" /> 4. Primary Product for Marketplace
               </span>
               <span className="text-[10px] text-emerald-800 bg-emerald-50 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Tiered Visibility
+                Customer Ordering
               </span>
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div
-                onClick={() => handleChange('subscription_tier', 'free')}
-                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                  formData.subscription_tier === 'free'
-                    ? 'border-slate-800 bg-white ring-2 ring-slate-800/10'
-                    : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-slate-800">Free</span>
-                  <Shield className="w-4 h-4 text-slate-400" />
-                </div>
-                <div className="text-base font-extrabold text-slate-900">₹0</div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-tight">Standard supplier listing in directory.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Product Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. UltraTech Weather Plus Cement"
+                  value={formData.product_name}
+                  onChange={e => handleChange('product_name', e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
               </div>
 
-              <div
-                onClick={() => handleChange('subscription_tier', 'pro')}
-                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all relative ${
-                  formData.subscription_tier === 'pro'
-                    ? 'border-emerald-600 bg-emerald-50/40 ring-2 ring-emerald-600/20'
-                    : 'border-slate-200 bg-slate-50/50 hover:border-emerald-200'
-                }`}
-              >
-                <span className="absolute -top-2 right-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
-                  Popular
-                </span>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-emerald-800">Pro</span>
-                  <Zap className="w-4 h-4 text-emerald-600" />
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Product Category *</label>
+                <select
+                  value={formData.product_category}
+                  onChange={e => handleChange('product_category', e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                >
+                  <option value="Cement">Cement</option>
+                  <option value="Steel & TMT">Steel & TMT</option>
+                  <option value="Stone & Sand">Stone & Sand</option>
+                  <option value="Pipes & Plumbing">Pipes & Plumbing</option>
+                  <option value="Bricks & Blocks">Bricks & Blocks</option>
+                  <option value="Paints & Waterproofing">Paints & Waterproofing</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Indicative Price (₹) & Unit</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="420"
+                    value={formData.indicative_price}
+                    onChange={e => handleChange('indicative_price', Number(e.target.value))}
+                    className="w-2/3 px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="bag / ton / unit"
+                    value={formData.unit_of_measurement}
+                    onChange={e => handleChange('unit_of_measurement', e.target.value)}
+                    className="w-1/3 px-3 py-2 text-sm rounded-xl border border-slate-300 text-center"
+                  />
                 </div>
-                <div className="text-base font-extrabold text-slate-900">₹299<span className="text-[10px] font-normal text-slate-500">/mo</span></div>
-                <p className="text-[11px] text-emerald-950 mt-1 leading-tight"><strong className="text-emerald-700">SPONSORED</strong> badge, elevated search placement.</p>
               </div>
 
-              <div
-                onClick={() => handleChange('subscription_tier', 'premium')}
-                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all relative ${
-                  formData.subscription_tier === 'premium'
-                    ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20'
-                    : 'border-slate-200 bg-slate-50/50 hover:border-indigo-200'
-                }`}
-              >
-                <span className="absolute -top-2 right-2 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
-                  Top #1
-                </span>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-indigo-900">Premium</span>
-                  <Crown className="w-4 h-4 text-indigo-600" />
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Product Image URL (optional)</label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/..."
+                  value={formData.primary_image_url}
+                  onChange={e => handleChange('primary_image_url', e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Marketplace Plan (Read-Only — set during registration) */}
+          <div className="space-y-3 pt-4 border-t border-slate-100">
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+              <Info className="w-4 h-4 text-emerald-600" /> 5. Your Marketplace Plan
+            </h2>
+
+            <div className={`p-4 rounded-xl border-2 ${
+              userEstablishedTier === 'premium'
+                ? 'border-indigo-400 bg-indigo-50/60'
+                : userEstablishedTier === 'pro'
+                  ? 'border-emerald-400 bg-emerald-50/60'
+                  : 'border-slate-300 bg-slate-50'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className={`text-base font-extrabold uppercase ${
+                    userEstablishedTier === 'premium'
+                      ? 'text-indigo-700'
+                      : userEstablishedTier === 'pro'
+                        ? 'text-emerald-700'
+                        : 'text-slate-700'
+                  }`}>
+                    {userEstablishedTier === 'premium' ? '👑 Premium' : userEstablishedTier === 'pro' ? '⚡ Pro' : '🛡️ Free'}
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {userEstablishedTier === 'premium'
+                      ? 'TOP SPONSORED placement on Supplier Marketplace — ₹799/mo'
+                      : userEstablishedTier === 'pro'
+                        ? 'SPONSORED badge & elevated search placement — ₹299/mo'
+                        : 'Standard supplier listing in directory — ₹0'}
+                  </p>
                 </div>
-                <div className="text-base font-extrabold text-slate-900">₹799<span className="text-[10px] font-normal text-slate-500">/mo</span></div>
-                <p className="text-[11px] text-indigo-950 mt-1 leading-tight"><strong>TOP SPONSORED</strong> placement on Supplier Marketplace.</p>
+                <span className="text-[10px] text-slate-500 bg-white/80 border border-slate-200 px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                  Selected at Registration
+                </span>
               </div>
             </div>
           </div>

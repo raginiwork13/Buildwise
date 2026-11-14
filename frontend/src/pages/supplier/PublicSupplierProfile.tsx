@@ -4,11 +4,20 @@ import type { SupplierProfileFull } from '../../types/profile';
 import { VerificationBadge } from '../../components/profile/VerificationBadge';
 import { ProductCard } from '../../components/supplier/ProductCard';
 import { MapPin, Mail, Phone, Globe, Package, ChevronRight } from 'lucide-react';
+import { useUser } from '../../context/UserContext';
+import { OrderProductModal } from '../../components/supplier/OrderProductModal';
+import type { OrderModalProduct } from '../../components/supplier/OrderProductModal';
+import { ViewOrdersModal } from '../../components/supplier/ViewOrdersModal';
 
 export const PublicSupplierProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { role } = useUser();
+  const isSupplier = role === 'supplier';
   const [supplier, setSupplier] = useState<SupplierProfileFull | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState<OrderModalProduct | null>(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showViewOrdersModal, setShowViewOrdersModal] = useState(false);
 
   useEffect(() => {
     const fetchSupplier = async () => {
@@ -108,7 +117,21 @@ export const PublicSupplierProfile: React.FC = () => {
             {supplier.products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {supplier.products.map((prod) => (
-                  <ProductCard key={prod.id} product={prod} />
+                  <ProductCard 
+                    key={prod.id} 
+                    product={prod} 
+                    onOrderClick={!isSupplier ? (p) => {
+                      setSelectedProductForOrder({
+                        ...p,
+                        supplier_id: supplier.id,
+                        supplier_name: supplier.company_name,
+                        supplier_address: supplier.business_address || supplier.primary_location || 'Goa',
+                        supplier_latitude: supplier.latitude || 15.3582,
+                        supplier_longitude: supplier.longitude || 73.9314
+                      });
+                      setShowOrderModal(true);
+                    } : undefined}
+                  />
                 ))}
               </div>
             ) : (
@@ -165,6 +188,26 @@ export const PublicSupplierProfile: React.FC = () => {
         </div>
 
       </div>
+
+      {/* --- ORDER MODAL --- */}
+      <OrderProductModal
+        isOpen={showOrderModal}
+        onClose={() => {
+          setShowOrderModal(false);
+          setSelectedProductForOrder(null);
+        }}
+        product={selectedProductForOrder}
+        onOrderSuccess={() => {
+          setTimeout(() => setShowViewOrdersModal(true), 300);
+        }}
+      />
+
+      {/* --- VIEW ORDERS MODAL --- */}
+      <ViewOrdersModal
+        isOpen={showViewOrdersModal}
+        onClose={() => setShowViewOrdersModal(false)}
+      />
+
     </div>
   );
 };

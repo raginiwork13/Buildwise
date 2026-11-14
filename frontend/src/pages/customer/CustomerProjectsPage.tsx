@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { 
   FolderKanban, Plus, Search, MapPin, IndianRupee, Calendar, 
   Layers, CheckCircle2, User, Building2, X, Filter, 
-  FileText, MessageSquare, Check, ArrowRight, ThumbsUp 
+  FileText, MessageSquare, Check, ArrowRight, ThumbsUp, BarChart2, ShieldCheck
 } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 import { OlxChatDrawer } from '../../components/chat/OlxChatDrawer';
 import type { ChatTarget } from '../../components/chat/OlxChatDrawer';
 import { QuotationsDashboardModal } from '../../components/quotations/QuotationsDashboardModal';
 import { SendQuotationModal } from '../../components/quotations/SendQuotationModal';
+import { MyProjectsPanel } from '../../components/projects/MyProjectsPanel';
+import { ProjectApprovalsModal } from '../../components/quotations/ProjectApprovalsModal';
 
 interface ProjectItem {
   id: string;
@@ -46,7 +48,9 @@ interface ProjectItem {
 }
 
 export const CustomerProjectsPage: React.FC = () => {
-  const { currentUser, setOpenRegisterModal, setSelectedRoleForModal } = useUser();
+  const { currentUser, role, setOpenRegisterModal, setSelectedRoleForModal } = useUser();
+  const isProfessional = role === 'professional';
+  const isCustomer = role === 'customer';
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,6 +65,10 @@ export const CustomerProjectsPage: React.FC = () => {
   const [selectedProjectForQuotation, setSelectedProjectForQuotation] = useState<ProjectItem | null>(null);
   const [interestedProjects, setInterestedProjects] = useState<Record<string, boolean>>({});
   const [interestFeedback, setInterestFeedback] = useState<string | null>(null);
+  const [showMyProjectsPanel, setShowMyProjectsPanel] = useState(false);
+  const [selectedWorkspaceIdForPanel, setSelectedWorkspaceIdForPanel] = useState<string | undefined>(undefined);
+  const [showProjectApprovalsModal, setShowProjectApprovalsModal] = useState(false);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(1);
 
   // Comprehensive Project Creation Modal state
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -278,15 +286,29 @@ export const CustomerProjectsPage: React.FC = () => {
                 <span>+ Post a New Project (Free)</span>
               </button>
 
-              {/* Quotations Feature Button right next to Post a Project */}
+              {/* Quotations Received button only visible to Customers */}
+              {isCustomer && (
+                <button
+                  onClick={() => setShowQuotationsModal(true)}
+                  className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all backdrop-blur-sm cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-amber-400" />
+                  <span>Quotations Received</span>
+                  <span className="ml-1 bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                    3
+                  </span>
+                </button>
+              )}
+
+              {/* My Projects Progress — visible to both customers and professionals */}
               <button
-                onClick={() => setShowQuotationsModal(true)}
-                className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all backdrop-blur-sm cursor-pointer"
+                onClick={() => setShowMyProjectsPanel(true)}
+                className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-md cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-amber-400" />
-                <span>Quotations Received</span>
-                <span className="ml-1 bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                  3
+                <BarChart2 className="w-4 h-4" />
+                <span>My Projects Progress</span>
+                <span className="ml-1 bg-white/20 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border border-white/30">
+                  1
                 </span>
               </button>
 
@@ -297,6 +319,26 @@ export const CustomerProjectsPage: React.FC = () => {
                 <MessageSquare className="w-4 h-4" />
                 <span>Open Messenger</span>
               </button>
+
+              {/* Project Approvals button — strictly for Professionals near Open Messenger */}
+              {isProfessional && (
+                <button
+                  onClick={() => setShowProjectApprovalsModal(true)}
+                  className="px-5 py-3 rounded-xl bg-indigo-900/80 hover:bg-indigo-800 text-amber-300 border border-amber-500/40 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-md cursor-pointer backdrop-blur-sm"
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <span>Project Approvals</span>
+                  {pendingApprovalsCount > 0 ? (
+                    <span className="ml-1 bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
+                      {pendingApprovalsCount}
+                    </span>
+                  ) : (
+                    <span className="ml-1 text-slate-400 text-[10px] font-bold">
+                      (0)
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -509,17 +551,19 @@ export const CustomerProjectsPage: React.FC = () => {
                         <span>Chat</span>
                       </button>
 
-                      {/* Send Quotation Button */}
-                      <button
-                        onClick={() => {
-                          setSelectedProjectForQuotation(proj);
-                          setShowSendQuotationModal(true);
-                        }}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Send Quotation</span>
-                      </button>
+                      {/* Send Quotation Button (Strictly for Verified Professionals) */}
+                      {isProfessional && (
+                        <button
+                          onClick={() => {
+                            setSelectedProjectForQuotation(proj);
+                            setShowSendQuotationModal(true);
+                          }}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Send Quotation</span>
+                        </button>
+                      )}
                     </div>
 
                   </div>
@@ -1063,6 +1107,37 @@ export const CustomerProjectsPage: React.FC = () => {
           </span>
         </button>
       </div>
+
+      {/* --- MY PROJECTS PROGRESS PANEL --- */}
+      <MyProjectsPanel
+        isOpen={showMyProjectsPanel}
+        onClose={() => {
+          setShowMyProjectsPanel(false);
+          setSelectedWorkspaceIdForPanel(undefined);
+        }}
+        targetWorkspaceId={selectedWorkspaceIdForPanel}
+        onOpenChat={(name, role, projectTitle) => {
+          setShowMyProjectsPanel(false);
+          setChatTarget({
+            recipientId: `prov-${name.toLowerCase().replace(/\s+/g, '-')}`,
+            recipientName: name,
+            recipientRole: role,
+            projectTitle
+          });
+          setShowChatDrawer(true);
+        }}
+      />
+
+      {/* --- PROJECT APPROVALS MODAL (PROFESSIONAL ONLY) --- */}
+      <ProjectApprovalsModal
+        isOpen={showProjectApprovalsModal}
+        onClose={() => setShowProjectApprovalsModal(false)}
+        onOpenMyProjects={(wsId) => {
+          if (wsId) setSelectedWorkspaceIdForPanel(wsId);
+          setShowMyProjectsPanel(true);
+        }}
+        onApprovalsCountChange={(count) => setPendingApprovalsCount(count)}
+      />
 
     </div>
   );

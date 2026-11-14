@@ -170,3 +170,69 @@ def list_accounts():
     results.sort(key=lambda x: str(x.get("last_login_at") or ""), reverse=True)
     return results
 
+class UpdateTierRequest(BaseModel):
+    email: str
+    subscription_tier: str # 'free' | 'pro' | 'premium'
+    role: Optional[str] = None
+
+@router.post("/update-tier")
+def update_user_tier(payload: UpdateTierRequest):
+    email = payload.email.lower().strip()
+    tier = payload.subscription_tier.lower().strip()
+    is_sponsored = tier in ["premium", "pro"]
+
+    sync_accounts_from_supabase()
+    account = db.user_accounts.get(email)
+    if not account:
+        account = {
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "full_name": email.split("@")[0].title(),
+            "role": payload.role or "customer",
+            "subscription_tier": tier,
+            "is_sponsored": is_sponsored,
+            "created_at": datetime.now(),
+            "last_login_at": datetime.now()
+        }
+    else:
+        account["subscription_tier"] = tier
+        account["is_sponsored"] = is_sponsored
+        account["last_login_at"] = datetime.now()
+
+    db.user_accounts[email] = account
+    save_account_to_supabase(account)
+
+    # Also update role-specific profiles in Supabase if connected
+    if supabase_client:
+        try:
+            supabase_client.table("customer_profiles").update({
+                "subscription_tier": tier,
+                "is_sponsored": is_sponsored
+            }).eq("email", email).execute()
+        except Exception as e:
+            print(f"Customer profile tier update notice: {e}")
+
+        try:
+            supabase_client.table("supplier_profiles").update({
+                "subscription_tier": tier,
+                "is_sponsored": is_sponsored
+            }).eq("business_email", email).execute()
+        except Exception as e:
+            print(f"Supplier profile tier update notice: {e}")
+
+        try:
+            supabase_client.table("professional_profiles").update({
+                "subscription_tier": tier,
+                "is_sponsored": is_sponsored
+            }).eq("email", email).execute()
+        except Exception as e:
+            print(f"Professional profile tier update notice: {e}")
+
+    return {
+        "success": True,
+        "email": email,
+        "subscription_tier": tier,
+        "is_sponsored": is_sponsored,
+        "message": f"Successfully updated subscription to {tier.upper()} plan!"
+    }
+
