@@ -4,7 +4,12 @@ import re
 import json
 import time
 from typing import List, Dict, Any, Optional
-import pypdf
+
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
+
 from app.config import settings
 
 # ---------------------------------------------------------------------------
@@ -103,6 +108,12 @@ def clean_and_parse_json(raw_text: str) -> Optional[Any]:
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     """Extract all text from an uploaded PDF stream using pypdf."""
+    if pypdf is None:
+        print("[PDF Extraction]: pypdf not available, using text decode fallback")
+        try:
+            return pdf_bytes.decode('utf-8', errors='ignore')
+        except Exception:
+            return ""
     try:
         reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
         pages_text = []

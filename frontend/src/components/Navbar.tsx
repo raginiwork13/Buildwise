@@ -5,7 +5,7 @@ import {
   ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn, Scale,
   Crown, Zap, Shield, Package, X, Award
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { UserProfile } from '../types';
 import { ChangePlanModal } from './subscription/ChangePlanModal';
 
@@ -30,6 +30,7 @@ const formatTimeAgo = (dateStr?: string) => {
 };
 
 export const Navbar: React.FC = () => {
+  const location = useLocation();
   const { 
     currentUser, 
     role, 
@@ -145,83 +146,79 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18">
+        <div className="flex items-center justify-between h-16 gap-4">
           
           {/* Brand Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-amber-400 shadow-md group-hover:scale-105 transition-transform">
-                <Building2 className="w-6 h-6" />
+              <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-amber-400 shadow-xs group-hover:scale-105 transition-transform">
+                <Building2 className="w-5 h-5" />
               </div>
-              <div>
-                <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1">
+              <div className="flex flex-col">
+                <span className="text-lg font-black tracking-tight text-slate-900 flex items-center leading-none">
                   Build<span className="text-amber-500">Wise</span>
-                  <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 ml-1">Goa</span>
+                  <span className="text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80 ml-1.5">Goa</span>
                 </span>
-                <span className="block text-[10px] text-slate-500 tracking-wider uppercase font-medium">AI Construction Marketplace</span>
+                <span className="text-[9px] text-slate-400 tracking-wider uppercase font-semibold mt-0.5">AI Construction</span>
               </div>
             </Link>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-3 text-sm font-medium text-slate-600">
-            <Link 
-              to="/professionals" 
-              className="text-slate-900 font-bold hover:text-amber-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200 text-xs"
-            >
-              <HardHat className="w-3.5 h-3.5 text-amber-600" />
-              <span>Professional Marketplace</span>
-            </Link>
-            <Link 
-              to="/suppliers" 
-              className="text-slate-900 font-bold hover:text-emerald-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200 text-xs"
-            >
-              <Truck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Supplier Marketplace</span>
-            </Link>
-            <Link 
-              to="/projects" 
-              className="text-slate-900 font-bold hover:text-indigo-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 text-xs"
-            >
-              <FolderKanban className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Projects</span>
-            </Link>
-            <Link to="/cost-estimator" className="hover:text-amber-600 transition-colors flex items-center gap-1.5 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>AI Cost Estimator</span>
-            </Link>
-            <Link 
-              to="/quotations/compare" 
-              className="text-slate-900 font-bold hover:text-purple-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-950 border border-purple-200 text-xs"
-            >
-              <Scale className="w-3.5 h-3.5 text-purple-600" />
-              <span>AI Quotation Comparison</span>
-            </Link>
+          {/* Clean, Even, Organized Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-200/60">
+            {[
+              { path: '/professionals', label: 'Professionals', icon: HardHat },
+              { path: '/suppliers', label: 'Suppliers', icon: Truck },
+              { path: '/projects', label: 'Projects', icon: FolderKanban },
+              { path: '/cost-estimator', label: 'AI Estimator', icon: Sparkles },
+              { path: '/quotations/compare', label: 'Compare Quotes', icon: Scale },
+            ].map(item => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold border border-slate-200/80'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-500' : 'text-slate-400'}`} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
 
             {role === 'admin' && (
               <Link 
                 to="/admin/revenue" 
-                className="text-white font-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-xs border border-purple-400/40 text-xs tracking-wide"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ml-1 ${
+                  location.pathname === '/admin/revenue'
+                    ? 'bg-purple-900 text-purple-100 shadow-2xs'
+                    : 'bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/80'
+                }`}
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-                <span>Platform Revenue (2%)</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                <span>Revenue (2%)</span>
               </Link>
             )}
           </nav>
 
-          {/* Right Action: Notifications & Profile Box */}
-          <div className="flex items-center gap-3">
+          {/* Right Action Group: Utilities, Plan Pill & Profile */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             
-            {/* Quick Chat Link */}
+            {/* Quick Chat Icon */}
             <Link
               to="/projects"
-              className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-              title="Chat Messenger (OLX / WhatsApp style)"
+              className="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+              title="Chat Messenger (Direct Inquiries)"
             >
-              <MessageSquare className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full" />
+              <MessageSquare className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full" />
             </Link>
 
             {/* Notification Bell */}
@@ -231,12 +228,12 @@ export const Navbar: React.FC = () => {
                   setNotificationsOpen(!notificationsOpen);
                   setProfileDropdownOpen(false);
                 }}
-                className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
                 title="Notifications"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white" />
                 )}
               </button>
 
@@ -285,49 +282,49 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* Quick Plan / Upgrade Button */}
+            {/* Compact, Organized Plan Badge Button */}
             <button
               onClick={() => setChangePlanOpen(true)}
-              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs border ${
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
                 userTier === 'premium'
-                  ? 'bg-gradient-to-r from-indigo-900 to-indigo-950 text-white border-indigo-500/30 hover:border-indigo-400'
+                  ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border-indigo-200'
                   : userTier === 'pro'
-                  ? 'bg-gradient-to-r from-emerald-900 to-emerald-950 text-white border-emerald-500/30 hover:border-emerald-400'
-                  : 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300'
+                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-200'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
               }`}
               title="Click to view or change your subscription plan"
             >
-              {userTier === 'premium' && <Crown className="w-3.5 h-3.5 text-amber-400" />}
-              {userTier === 'pro' && <Zap className="w-3.5 h-3.5 text-emerald-400" />}
-              {userTier === 'free' && <Shield className="w-3.5 h-3.5 text-amber-600" />}
-              <span className="uppercase">{userTier} Plan</span>
-              <span className="text-[10px] text-amber-400 font-bold ml-0.5">
-                {userTier === 'free' ? '• Upgrade' : '• Change'}
+              {userTier === 'premium' && <Crown className="w-3.5 h-3.5 text-indigo-600" />}
+              {userTier === 'pro' && <Zap className="w-3.5 h-3.5 text-emerald-600" />}
+              {userTier === 'free' && <Shield className="w-3.5 h-3.5 text-slate-500" />}
+              <span className="uppercase text-[11px] font-black">{userTier}</span>
+              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1 py-0.2 rounded border border-amber-200/60">
+                {userTier === 'free' ? 'Upgrade' : 'Plan'}
               </span>
             </button>
 
-            {/* THE "PROFILE" BOX BUTTON */}
+            {/* Profile Dropdown Trigger */}
             <div className="relative">
               <button
                 onClick={() => {
                   setProfileDropdownOpen(!profileDropdownOpen);
                   setNotificationsOpen(false);
                 }}
-                className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-2xl border-2 border-slate-200 hover:border-slate-300 bg-white shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl border border-slate-200 hover:border-slate-300 bg-white shadow-2xs hover:shadow-xs transition-all cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-bold text-xs shadow-xs">
+                <div className="w-7 h-7 rounded-lg bg-slate-900 text-amber-400 flex items-center justify-center font-black text-xs shadow-2xs">
                   {currentUser?.fullName.charAt(0) || 'U'}
                 </div>
                 <div className="text-left hidden sm:block">
                   <div className="text-xs font-bold text-slate-900 leading-tight flex items-center gap-1">
-                    <span>{currentUser ? currentUser.fullName : 'My Profile'}</span>
-                    <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="truncate max-w-[100px]">{currentUser ? currentUser.fullName : 'Profile'}</span>
+                    <ShieldCheck className="w-3 h-3 text-blue-500 shrink-0" />
                   </div>
-                  <div className="text-[10px] text-slate-500 leading-none mt-0.5 capitalize">
+                  <div className="text-[9px] text-slate-400 leading-none mt-0.5 capitalize">
                     {roleConfig[role].label}
                   </div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 shrink-0" />
               </button>
 
               {/* Comprehensive Profile Dropdown Menu */}
