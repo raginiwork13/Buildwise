@@ -177,16 +177,27 @@ export const OrderProductModal: React.FC<OrderProductModalProps> = ({
     };
 
     try {
-      await fetch('http://localhost:8000/api/v1/orders', {
+      const res = await fetch('http://localhost:8000/api/v1/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (res.ok) {
+        const orderData = await res.json();
+        window.dispatchEvent(new CustomEvent('supplier_order_placed', {
+          detail: {
+            title: '📦 Received Order',
+            desc: `Received order for ${quantity}x ${product.product_name} from ${payload.customer_name}. Total: ₹${grandTotal.toLocaleString('en-IN')}`,
+            order: orderData
+          }
+        }));
+      }
     } catch (err) {
       console.warn('Order saved locally:', err);
     } finally {
       setSubmitting(false);
       setOrderDone(true);
+      window.dispatchEvent(new Event('refresh_notifications'));
       if (onOrderSuccess) onOrderSuccess();
     }
   };

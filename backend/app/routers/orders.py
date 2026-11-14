@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.db.store import db, supabase_client
+from app.routers.notifications import add_notification
 import math
 
 def calculate_haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -151,6 +152,37 @@ def create_order(payload: OrderItemCreate):
         db.supplier_orders = {}
     db.supplier_orders[oid] = data
     save_order_to_supabase(data)
+
+    # 1. Supplier Notification: "Received Order"
+    c_name = data.get("customer_name") or "Valued Customer"
+    p_name = data.get("product_name") or "Material"
+    qty = data.get("quantity") or 1
+    total_val = data.get("total_amount") or 0.0
+    s_name = data.get("supplier_name") or "Building Materials Supplier"
+
+    add_notification(
+        title="📦 Received Order",
+        desc=f"Received order #{oid[-6:].upper()} from {c_name} for {qty}x {p_name}. Total: ₹{total_val:,.2f}",
+        recipient_role="supplier",
+        recipient_id=data.get("supplier_id"),
+        recipient_name=s_name,
+        sender_name=c_name,
+        notif_type="order",
+        meta={"order_id": oid, "product_name": p_name, "quantity": qty, "total_amount": total_val, "customer_name": c_name}
+    )
+
+    # 2. Consumer Notification: "Order Placed"
+    add_notification(
+        title="Order Placed Successfully",
+        desc=f"Your order #{oid[-6:].upper()} for {qty}x {p_name} has been sent to {s_name}. Total: ₹{total_val:,.2f}",
+        recipient_role="customer",
+        recipient_id=data.get("customer_id"),
+        recipient_name=c_name,
+        sender_name=s_name,
+        notif_type="order",
+        meta={"order_id": oid, "product_name": p_name, "quantity": qty, "total_amount": total_val}
+    )
+
     return data
 
 @router.put("/{order_id}/status")
