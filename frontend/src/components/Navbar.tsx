@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { 
   Building2, Sparkles, ChevronDown, User, Bell, Edit3, 
-  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn
+  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn,
+  Crown, Zap, Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { UserProfile } from '../types';
+import { ChangePlanModal } from './subscription/ChangePlanModal';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -19,6 +21,9 @@ export const Navbar: React.FC = () => {
   } = useUser();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [changePlanOpen, setChangePlanOpen] = useState(false);
+
+  const userTier = (currentUser?.subscriptionTier || 'free') as 'free' | 'pro' | 'premium';
 
   // Mock notifications for demonstration
   const [notifications, setNotifications] = useState([
@@ -159,6 +164,27 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
+            {/* Quick Plan / Upgrade Button */}
+            <button
+              onClick={() => setChangePlanOpen(true)}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs border ${
+                userTier === 'premium'
+                  ? 'bg-gradient-to-r from-indigo-900 to-indigo-950 text-white border-indigo-500/30 hover:border-indigo-400'
+                  : userTier === 'pro'
+                  ? 'bg-gradient-to-r from-emerald-900 to-emerald-950 text-white border-emerald-500/30 hover:border-emerald-400'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300'
+              }`}
+              title="Click to view or change your subscription plan"
+            >
+              {userTier === 'premium' && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+              {userTier === 'pro' && <Zap className="w-3.5 h-3.5 text-emerald-400" />}
+              {userTier === 'free' && <Shield className="w-3.5 h-3.5 text-amber-600" />}
+              <span className="uppercase">{userTier} Plan</span>
+              <span className="text-[10px] text-amber-400 font-bold ml-0.5">
+                {userTier === 'free' ? '• Upgrade' : '• Change'}
+              </span>
+            </button>
+
             {/* THE "PROFILE" BOX BUTTON */}
             <div className="relative">
               <button
@@ -196,6 +222,33 @@ export const Navbar: React.FC = () => {
                     </div>
                     <div className="text-sm font-black text-slate-900">{currentUser?.fullName}</div>
                     <div className="text-[11px] text-slate-500">{currentUser?.email}</div>
+
+                    {/* Subscription Tier Banner in Dropdown */}
+                    <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        {userTier === 'premium' && <Crown className="w-3.5 h-3.5 text-indigo-600" />}
+                        {userTier === 'pro' && <Zap className="w-3.5 h-3.5 text-emerald-600" />}
+                        {userTier === 'free' && <Shield className="w-3.5 h-3.5 text-slate-500" />}
+                        <div>
+                          <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-800">
+                            {userTier} Plan
+                          </span>
+                          <span className="text-[10px] text-slate-500 block">
+                            {userTier === 'premium' ? 'Free Delivery • VIP' : userTier === 'pro' ? '₹30/km Delivery • Pro' : '₹90/km Delivery'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setChangePlanOpen(true);
+                          setProfileDropdownOpen(false);
+                        }}
+                        className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                      >
+                        Change Plan
+                      </button>
+                    </div>
                   </div>
 
                   {/* Profile Management Actions */}
@@ -336,6 +389,12 @@ export const Navbar: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Change / Upgrade Plan Modal */}
+      <ChangePlanModal
+        isOpen={changePlanOpen}
+        onClose={() => setChangePlanOpen(false)}
+      />
     </header>
   );
 };
