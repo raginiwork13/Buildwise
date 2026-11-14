@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
@@ -138,7 +139,7 @@ export const CostEstimatorPage: React.FC = () => {
     };
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/cost-estimator/predict', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/cost-estimator/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

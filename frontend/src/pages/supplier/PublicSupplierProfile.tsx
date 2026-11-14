@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { SupplierProfileFull } from '../../types/profile';
@@ -34,7 +35,7 @@ export const PublicSupplierProfile: React.FC = () => {
   useEffect(() => {
     const fetchSupplier = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/suppliers/${id || 'supp-mandovi-1'}`);
+        const res = await fetch(`${API_BASE_URL}/api/v1/suppliers/${id || 'supp-mandovi-1'}`);
         if (res.ok) {
           const data = await res.json();
           setSupplier(data);
@@ -70,7 +71,7 @@ export const PublicSupplierProfile: React.FC = () => {
     setAddError(null);
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/suppliers/${supplier.id}/products`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/suppliers/${supplier.id}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

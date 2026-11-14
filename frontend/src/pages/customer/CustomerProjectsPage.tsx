@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { 
   FolderKanban, Plus, Search, MapPin, IndianRupee, Calendar, 
@@ -128,7 +129,7 @@ export const CustomerProjectsPage: React.FC = () => {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/projects');
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects`);
       if (res.ok) {
         const data = await res.json();
         setProjects(data);
@@ -145,7 +146,7 @@ export const CustomerProjectsPage: React.FC = () => {
     if (isAlready) return;
 
     try {
-      await fetch('http://localhost:8000/api/v1/interests', {
+      await fetch(`${API_BASE_URL}/api/v1/interests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,7 +232,7 @@ export const CustomerProjectsPage: React.FC = () => {
         estimated_budget: newProject.max_budget || 4500000
       };
 
-      const res = await fetch('http://localhost:8000/api/v1/projects', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

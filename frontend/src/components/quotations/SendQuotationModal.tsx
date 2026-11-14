@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState } from 'react';
 import { X, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
@@ -54,14 +55,14 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
     formData.append('is_private', 'false');
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/media/upload', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/media/upload`, {
         method: 'POST',
         body: formData
       });
 
       if (res.ok) {
         const data = await res.json();
-        setUploadedDocUrl(`http://localhost:8000${data.file_url}`);
+        setUploadedDocUrl(`${API_BASE_URL}${data.file_url}`);
         setUploadedDocName(file.name);
       } else {
         // Fallback local blob URL so download works regardless of server config
@@ -106,7 +107,7 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
     };
 
     try {
-      await fetch('http://localhost:8000/api/v1/quotations', {
+      await fetch(`${API_BASE_URL}/api/v1/quotations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

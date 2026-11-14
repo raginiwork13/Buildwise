@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState } from 'react';
 import { 
   X, ShoppingBag, Truck, MapPin, CheckCircle2, 
@@ -177,7 +178,7 @@ export const OrderProductModal: React.FC<OrderProductModalProps> = ({
     };
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/orders', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

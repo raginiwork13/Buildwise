@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -107,7 +108,7 @@ export const QuotationComparisonPage: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/quotations/benchmark');
+      const res = await fetch(`${API_BASE_URL}/api/v1/quotations/benchmark`);
       if (!res.ok) throw new Error('Failed to fetch benchmark comparison.');
       const data: ComparisonData = await res.json();
       setComparisonResult(data);
@@ -135,7 +136,7 @@ export const QuotationComparisonPage: React.FC = () => {
     });
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/quotations/upload-pdfs', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/quotations/upload-pdfs`, {
         method: 'POST',
         body: formData
       });

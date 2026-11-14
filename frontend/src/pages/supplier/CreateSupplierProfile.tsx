@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Truck, CheckCircle2, ArrowRight, Building2, MapPin, Mail, Info, Navigation, Crosshair } from 'lucide-react';
@@ -127,7 +128,7 @@ export const CreateSupplierProfile: React.FC = () => {
         is_published: true
       };
 
-      const res = await fetch('http://localhost:8000/api/v1/suppliers', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/suppliers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -138,7 +139,7 @@ export const CreateSupplierProfile: React.FC = () => {
 
         // Also add their product
         if (formData.product_name) {
-          await fetch(`http://localhost:8000/api/v1/suppliers/${suppData.id}/products`, {
+          await fetch(`${API_BASE_URL}/api/v1/suppliers/${suppData.id}/products`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

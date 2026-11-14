@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, User,
@@ -36,7 +37,7 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
   const fetchCustomerApprovedQuotations = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/quotations');
+      const res = await fetch(`${API_BASE_URL}/api/v1/quotations`);
       if (res.ok) {
         const data: QuotationItem[] = await res.json();
         // Filter quotations submitted by this professional that have been approved by customer OR work_started
@@ -81,7 +82,7 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
     setQuotations(prev => prev.map(q => q.id === quot.id ? { ...q, status: newStatus as any } : q));
 
     try {
-      await fetch(`http://localhost:8000/api/v1/quotations/${quot.id}/status`, {
+      await fetch(`${API_BASE_URL}/api/v1/quotations/${quot.id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -89,7 +90,7 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
 
       if (decision === 'accept') {
         // Activate/Create the project workspace since both have approved!
-        const wsRes = await fetch('http://localhost:8000/api/v1/workspaces', {
+        const wsRes = await fetch(`${API_BASE_URL}/api/v1/workspaces`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -114,7 +115,7 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
 
         // Record 2% Platform Commission Revenue (Business Model)
         try {
-          await fetch('http://localhost:8000/api/v1/admin/revenue/collect', {
+          await fetch(`${API_BASE_URL}/api/v1/admin/revenue/collect`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

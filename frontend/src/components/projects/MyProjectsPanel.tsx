@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   X, BarChart2, CheckCircle2, Clock, AlertTriangle, Building2,
@@ -99,7 +100,7 @@ interface MyProjectsPanelProps {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const API = 'http://localhost:8000/api/v1';
+const API = `${API_BASE_URL}/api/v1`;
 
 const fmtINR = (n: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
