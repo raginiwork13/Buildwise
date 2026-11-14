@@ -128,6 +128,24 @@ def create_supplier(payload: SupplierProfileCreate):
         c["supplier_id"] = sid
         db.supplier_categories[cid] = c
 
+    # Persist locally so suppliers survive server restarts
+    db.persist("supplier_profiles")
+    db.persist("supplier_categories")
+
+    # Record subscription revenue if registering with pro or premium
+    tier = (data.get("subscription_tier") or "free").lower().strip()
+    if tier in ["pro", "premium"]:
+        try:
+            from app.routers.auth import record_subscription_revenue
+            record_subscription_revenue(
+                email=data.get("business_email") or f"{sid}@example.com",
+                role="supplier",
+                tier=tier,
+                full_name=data.get("company_name")
+            )
+        except Exception as e:
+            print(f"Subscription revenue recording error for supplier: {e}")
+
     return assemble_supplier(data)
 
 @router.get("", response_model=List[SupplierProfileResponse])
@@ -205,6 +223,7 @@ def add_product(id: str, payload: SupplierProductCreate):
     data["created_at"] = now
     data["updated_at"] = now
     db.supplier_products[prod_id] = data
+    db.persist("supplier_products")
 
     if supabase_client:
         try:

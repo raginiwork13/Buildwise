@@ -48,6 +48,9 @@ def create_project(payload: ProjectCreate):
     # Store in Supabase
     save_project_to_supabase(data)
 
+    # Persist locally so projects survive server restarts
+    db.persist("customer_projects")
+
     return data
 
 @router.get("", response_model=List[ProjectResponse])

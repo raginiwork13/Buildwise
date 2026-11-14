@@ -87,6 +87,7 @@ def create_quotation(payload: QuotationCreate):
 
     db.project_quotations[qid] = data
     save_quotation_to_supabase(data)
+    db.persist("project_quotations")
 
     # Increment project enquiry count if project exists
     proj_id = data.get("project_id")
@@ -94,7 +95,6 @@ def create_quotation(payload: QuotationCreate):
         db.customer_projects[proj_id]["enquiries_count"] = db.customer_projects[proj_id].get("enquiries_count", 0) + 1
 
     # --- Trigger Notification to Consumer ---
-    # "when the quotation is uploaded by the professionals that time consumer should receive notification you received quotation from this so and so professional"
     c_name = data.get("customer_name") or "Valued Client"
     p_name = data.get("provider_name") or "Professional"
     p_comp = data.get("provider_company") or p_name
@@ -114,101 +114,9 @@ def create_quotation(payload: QuotationCreate):
 
     return data
 
-@router.get("/{id}", response_model=QuotationResponse)
-def get_quotation(id: str):
-    if id not in db.project_quotations:
-        sync_quotations_from_supabase()
-    if id not in db.project_quotations:
-        raise HTTPException(status_code=404, detail="Quotation not found")
-    return db.project_quotations[id]
-
-@router.put("/{id}/status", response_model=QuotationResponse)
-def update_quotation_status(id: str, payload: QuotationUpdate):
-    if id not in db.project_quotations:
-        sync_quotations_from_supabase()
-    if id not in db.project_quotations:
-        raise HTTPException(status_code=404, detail="Quotation not found")
-
-    current = db.project_quotations[id]
-    if payload.status:
-        current["status"] = payload.status
-    if payload.notes:
-        current["notes"] = payload.notes
-    current["updated_at"] = datetime.now().isoformat()
-    db.project_quotations[id] = current
-
-    if supabase_client:
-        try:
-            supabase_client.table("project_quotations").update({
-                "status": current["status"], 
-                "updated_at": current["updated_at"]
-            }).eq("id", id).execute()
-        except Exception as e:
-            print(f"Supabase quotation update notice: {e}")
-
-    c_name = current.get("customer_name") or "Valued Client"
-    p_name = current.get("provider_name") or "Professional"
-    p_comp = current.get("provider_company") or p_name
-    proj_title = current.get("project_title") or "Project"
-    price = float(current.get("total_estimated_price") or 0.0)
-
-    # --- Trigger Notification on Status Change ---
-    # 1. When the quotation is approved by consumer:
-    # "when the quotation approved by consumer professional should receive notification"
-    if payload.status == "approved":
-        # Notification to Professional:
-        add_notification(
-            title="✅ Quotation Approved by Consumer",
-            desc=f"{c_name} approved your quotation for project '{proj_title}' (₹{price:,.2f}). Please review and accept project commencement.",
-            recipient_role="professional",
-            recipient_name=p_name,
-            recipient_id=current.get("provider_id"),
-            sender_name=c_name,
-            notif_type="quotation",
-            meta={"quotation_id": id, "project_id": current.get("project_id"), "status": "approved"}
-        )
-        # Notification to Consumer:
-        add_notification(
-            title="Quotation Approval Sent",
-            desc=f"You approved the quotation from {p_name} for '{proj_title}'. Awaiting professional confirmation to start work.",
-            recipient_role="customer",
-            recipient_name=c_name,
-            recipient_id=current.get("customer_id"),
-            sender_name=p_name,
-            notif_type="quotation",
-            meta={"quotation_id": id, "status": "approved"}
-        )
-
-    # 2. When the professional approves / accepts work commencement:
-    # "and also the professional will approve consumer will receive the notification"
-    elif payload.status == "work_started":
-        # Notification to Consumer:
-        add_notification(
-            title="🎉 Quotation Approved by Professional!",
-            desc=f"{p_name} ({p_comp}) has approved project commencement for '{proj_title}'! Work agreement active and milestone tracking ready.",
-            recipient_role="customer",
-            recipient_name=c_name,
-            recipient_id=current.get("customer_id"),
-            sender_name=p_name,
-            notif_type="project",
-            meta={"quotation_id": id, "project_id": current.get("project_id"), "status": "work_started"}
-        )
-        # Notification to Professional:
-        add_notification(
-            title="🚀 Project Commenced",
-            desc=f"You confirmed project commencement for '{proj_title}' with {c_name}. Milestone workspace is live.",
-            recipient_role="professional",
-            recipient_name=p_name,
-            recipient_id=current.get("provider_id"),
-            sender_name=c_name,
-            notif_type="project",
-            meta={"quotation_id": id, "status": "work_started"}
-        )
-
-    return current
-
 # =============================================================================
-# 2. AI QUOTATION COMPARISON & MCDA ENDPOINTS
+# AI QUOTATION COMPARISON & MCDA ENDPOINTS
+# (Must be defined BEFORE /{id} to avoid path parameter capture)
 # =============================================================================
 
 @router.get("/benchmark", response_model=ComparisonResponse)
@@ -268,3 +176,92 @@ async def upload_and_compare_pdfs(files: List[UploadFile] = File(...)):
         )
 
     return evaluate_and_rank_quotations(valid_quotes)
+
+# =============================================================================
+# INDIVIDUAL QUOTATION CRUD (by ID - must come AFTER specific named routes)
+# =============================================================================
+
+@router.get("/{id}", response_model=QuotationResponse)
+def get_quotation(id: str):
+    if id not in db.project_quotations:
+        sync_quotations_from_supabase()
+    if id not in db.project_quotations:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+    return db.project_quotations[id]
+
+@router.put("/{id}/status", response_model=QuotationResponse)
+def update_quotation_status(id: str, payload: QuotationUpdate):
+    if id not in db.project_quotations:
+        sync_quotations_from_supabase()
+    if id not in db.project_quotations:
+        raise HTTPException(status_code=404, detail="Quotation not found")
+
+    current = db.project_quotations[id]
+    if payload.status:
+        current["status"] = payload.status
+    if payload.notes:
+        current["notes"] = payload.notes
+    current["updated_at"] = datetime.now().isoformat()
+    db.project_quotations[id] = current
+    db.persist("project_quotations")
+
+    if supabase_client:
+        try:
+            supabase_client.table("project_quotations").update({
+                "status": current["status"], 
+                "updated_at": current["updated_at"]
+            }).eq("id", id).execute()
+        except Exception as e:
+            print(f"Supabase quotation update notice: {e}")
+
+    c_name = current.get("customer_name") or "Valued Client"
+    p_name = current.get("provider_name") or "Professional"
+    p_comp = current.get("provider_company") or p_name
+    proj_title = current.get("project_title") or "Project"
+    price = float(current.get("total_estimated_price") or 0.0)
+
+    if payload.status == "approved":
+        add_notification(
+            title="✅ Quotation Approved by Consumer",
+            desc=f"{c_name} approved your quotation for project '{proj_title}' (₹{price:,.2f}). Please review and accept project commencement.",
+            recipient_role="professional",
+            recipient_name=p_name,
+            recipient_id=current.get("provider_id"),
+            sender_name=c_name,
+            notif_type="quotation",
+            meta={"quotation_id": id, "project_id": current.get("project_id"), "status": "approved"}
+        )
+        add_notification(
+            title="Quotation Approval Sent",
+            desc=f"You approved the quotation from {p_name} for '{proj_title}'. Awaiting professional confirmation to start work.",
+            recipient_role="customer",
+            recipient_name=c_name,
+            recipient_id=current.get("customer_id"),
+            sender_name=p_name,
+            notif_type="quotation",
+            meta={"quotation_id": id, "status": "approved"}
+        )
+
+    elif payload.status == "work_started":
+        add_notification(
+            title="🎉 Quotation Approved by Professional!",
+            desc=f"{p_name} ({p_comp}) has approved project commencement for '{proj_title}'! Work agreement active and milestone tracking ready.",
+            recipient_role="customer",
+            recipient_name=c_name,
+            recipient_id=current.get("customer_id"),
+            sender_name=p_name,
+            notif_type="project",
+            meta={"quotation_id": id, "project_id": current.get("project_id"), "status": "work_started"}
+        )
+        add_notification(
+            title="🚀 Project Commenced",
+            desc=f"You confirmed project commencement for '{proj_title}' with {c_name}. Milestone workspace is live.",
+            recipient_role="professional",
+            recipient_name=p_name,
+            recipient_id=current.get("provider_id"),
+            sender_name=c_name,
+            notif_type="project",
+            meta={"quotation_id": id, "status": "work_started"}
+        )
+
+    return current
