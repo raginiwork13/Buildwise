@@ -135,6 +135,7 @@ def create_workspace(payload: dict):
         "updated_at": now,
     }
     db.project_workspaces[ws_id] = workspace
+    db.persist("project_workspaces")
     save_workspace_to_supabase(workspace)
     _ensure_default_milestones(ws_id)
     _ensure_default_payments(ws_id)
@@ -313,7 +314,32 @@ def pay_commission(workspace_id: str, payload: dict):
     
     ws["updated_at"] = now
     db.project_workspaces[workspace_id] = ws
+    db.persist("project_workspaces")
     save_workspace_to_supabase(ws)
+
+    # Record / update platform revenue transaction
+    try:
+        from app.routers.revenue import record_project_commission, CollectRevenueRequest
+        agreed_amt = float(ws.get("agreed_amount") or 0.0)
+        proj_id = ws.get("project_id") or workspace_id
+        
+        # Check if already recorded in platform_revenue_transactions
+        existing_tx = next((t for t in getattr(db, "platform_revenue_transactions", {}).values() if t.get("project_id") == proj_id), None)
+        if not existing_tx and agreed_amt > 0:
+            record_project_commission(CollectRevenueRequest(
+                project_id=proj_id,
+                project_title=ws.get("project_title", "Agreed Construction Project"),
+                quotation_id=None,
+                agreed_budget=agreed_amt,
+                customer_name=ws.get("customer_name", "Customer"),
+                professional_name=ws.get("professional_name", "Professional"),
+                customer_commission_rate=2.0,
+                professional_commission_rate=2.0,
+                payment_method=f"UPI/Escrow Ref: {payment_ref}"
+            ))
+    except Exception as e:
+        print(f"Revenue recording upon commission payment notice: {e}")
+
     return ws
 
 
@@ -399,6 +425,7 @@ def create_milestone(workspace_id: str, payload: dict):
         "created_at": now,
     }
     db.project_milestones[mid] = milestone
+    db.persist("project_milestones")
     save_milestone_to_supabase(milestone)
     return milestone
 
@@ -415,6 +442,7 @@ def update_milestone_status(workspace_id: str, milestone_id: str, payload: dict)
     if payload.get("status") in ("completed",) and not ms.get("actual_end"):
         ms["actual_end"] = datetime.now().isoformat()[:10]
     db.project_milestones[milestone_id] = ms
+    db.persist("project_milestones")
     save_milestone_to_supabase(ms)
     _recalculate_progress(workspace_id)
     return ms
@@ -487,6 +515,7 @@ def mark_payment_paid(workspace_id: str, payment_id: str, payload: dict):
     pmt["paid_date"] = datetime.now().isoformat()[:10]
     pmt["reference"] = payload.get("reference", "")
     db.payment_milestones[payment_id] = pmt
+    db.persist("payment_milestones")
     save_payment_to_supabase(pmt)
     
     # Update amount_paid in workspace
@@ -497,6 +526,8 @@ def mark_payment_paid(workspace_id: str, payment_id: str, payload: dict):
             if p.get("workspace_id") == workspace_id and p.get("status") == "paid"
         )
         ws["amount_paid"] = total_paid
+        db.project_workspaces[workspace_id] = ws
+        db.persist("project_workspaces")
         save_workspace_to_supabase(ws)
     return pmt
 
