@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   FolderKanban, Plus, Search, MapPin, IndianRupee, Calendar, 
   Layers, CheckCircle2, User, Building2, X, Filter, 
-  FileText, MessageSquare, Check, ArrowRight, ThumbsUp, BarChart2, ShieldCheck
+  FileText, MessageSquare, Check, ArrowRight, ThumbsUp, BarChart2, ShieldCheck,
+  Lock
 } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 import { OlxChatDrawer } from '../../components/chat/OlxChatDrawer';
@@ -11,6 +12,7 @@ import { QuotationsDashboardModal } from '../../components/quotations/Quotations
 import { SendQuotationModal } from '../../components/quotations/SendQuotationModal';
 import { MyProjectsPanel } from '../../components/projects/MyProjectsPanel';
 import { ProjectApprovalsModal } from '../../components/quotations/ProjectApprovalsModal';
+import { ChangePlanModal } from '../../components/subscription/ChangePlanModal';
 
 interface ProjectItem {
   id: string;
@@ -69,6 +71,7 @@ export const CustomerProjectsPage: React.FC = () => {
   const [selectedWorkspaceIdForPanel, setSelectedWorkspaceIdForPanel] = useState<string | undefined>(undefined);
   const [showProjectApprovalsModal, setShowProjectApprovalsModal] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(1);
+  const [showUpgradeModalForChat, setShowUpgradeModalForChat] = useState(false);
 
   // Comprehensive Project Creation Modal state
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -166,6 +169,15 @@ export const CustomerProjectsPage: React.FC = () => {
   };
 
   const handleOpenChatForProject = (proj: ProjectItem) => {
+    // Check membership tier: Chat is exclusively accessible to PRO and PREMIUM users
+    const userTier = (currentUser?.subscriptionTier || 'free').toLowerCase();
+    const canAccessChat = userTier === 'pro' || userTier === 'premium';
+
+    if (!canAccessChat) {
+      setShowUpgradeModalForChat(true);
+      return;
+    }
+
     setChatTarget({
       recipientId: `cust-${proj.customer_name.toLowerCase().replace(/\s+/g, '-')}`,
       recipientName: proj.customer_name,
@@ -177,6 +189,14 @@ export const CustomerProjectsPage: React.FC = () => {
   };
 
   const handleOpenChatFromQuotations = (providerName: string, providerRole: string, projectTitle: string) => {
+    const userTier = (currentUser?.subscriptionTier || 'free').toLowerCase();
+    const canAccessChat = userTier === 'pro' || userTier === 'premium';
+
+    if (!canAccessChat) {
+      setShowUpgradeModalForChat(true);
+      return;
+    }
+
     setShowQuotationsModal(false);
     setChatTarget({
       recipientId: `prov-${providerName.toLowerCase().replace(/\s+/g, '-')}`,
@@ -542,14 +562,31 @@ export const CustomerProjectsPage: React.FC = () => {
                     </button>
 
                     <div className="flex items-center gap-2">
-                      {/* Chat Button (takes to chat with that user) */}
-                      <button
-                        onClick={() => handleOpenChatForProject(proj)}
-                        className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Chat</span>
-                      </button>
+                      {/* Chat Button (Exclusively accessible to Pro & Premium) */}
+                      {(() => {
+                        const userTier = (currentUser?.subscriptionTier || 'free').toLowerCase();
+                        const isPaidTier = userTier === 'pro' || userTier === 'premium';
+
+                        return (
+                          <button
+                            onClick={() => handleOpenChatForProject(proj)}
+                            title={isPaidTier ? "Direct Real-Time Chat" : "Upgrade to Pro or Premium to unlock direct project chat"}
+                            className={`px-3 py-2 font-bold text-xs rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                              isPaidTier
+                                ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                                : 'bg-amber-50/80 hover:bg-amber-100/80 text-amber-900 border-amber-300'
+                            }`}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Chat</span>
+                            {!isPaidTier && (
+                              <span className="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase flex items-center gap-0.5">
+                                <Lock className="w-2.5 h-2.5" /> VIP
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })()}
 
                       {/* Send Quotation Button (Strictly for Verified Professionals) */}
                       {isProfessional && (
@@ -1094,7 +1131,14 @@ export const CustomerProjectsPage: React.FC = () => {
       {/* --- FLOATING MESSENGER TRIGGER AT RIGHTMOST CORNER --- */}
       <div className="fixed bottom-6 right-6 z-40">
         <button
-          onClick={() => setShowChatDrawer(true)}
+          onClick={() => {
+            const userTier = (currentUser?.subscriptionTier || 'free').toLowerCase();
+            if (userTier === 'pro' || userTier === 'premium') {
+              setShowChatDrawer(true);
+            } else {
+              setShowUpgradeModalForChat(true);
+            }
+          }}
           className="p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-2xl hover:scale-105 transition-all flex items-center justify-center relative cursor-pointer group"
           title="Open Messenger (Chat with Customers & Professionals)"
         >
@@ -1107,6 +1151,12 @@ export const CustomerProjectsPage: React.FC = () => {
           </span>
         </button>
       </div>
+
+      {/* Upgrade Plan Modal for Chat Access Guard */}
+      <ChangePlanModal
+        isOpen={showUpgradeModalForChat}
+        onClose={() => setShowUpgradeModalForChat(false)}
+      />
 
       {/* --- MY PROJECTS PROGRESS PANEL --- */}
       <MyProjectsPanel

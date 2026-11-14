@@ -15,15 +15,23 @@ import {
   Briefcase,
   RefreshCw,
   Send,
-  MessageSquare
+  MessageSquare,
+  Lock
 } from 'lucide-react';
 import type { ProfessionalProfileFull } from '../types/profile';
+import { useUser } from '../context/UserContext';
+import type { ChatTarget } from './chat/OlxChatDrawer';
 
 interface ProfessionalDiscoveryProps {
   isHomePageView?: boolean;
+  onEnquireViaChat?: (target: ChatTarget) => void;
 }
 
-export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({ isHomePageView = false }) => {
+export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({ 
+  isHomePageView = false,
+  onEnquireViaChat
+}) => {
+  const { currentUser, role } = useUser();
   const [profiles, setProfiles] = useState<ProfessionalProfileFull[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [backendError, setBackendError] = useState<boolean>(false);
@@ -763,18 +771,46 @@ export const ProfessionalDiscovery: React.FC<ProfessionalDiscoveryProps> = ({ is
                               <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                             
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEnquiryModalProf(prof);
-                                setEnquirySent(false);
-                                setEnquiryText('');
-                              }}
-                              className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5" />
-                              <span>Enquire / Request Quote</span>
-                            </button>
+                            {/* ENQUIRE OPTION: Only available for Customers and Suppliers (NOT Professionals) */}
+                            {role !== 'professional' && (
+                              (() => {
+                                const userTier = (currentUser?.subscriptionTier || 'free').toLowerCase();
+                                const isPaidTier = userTier === 'pro' || userTier === 'premium';
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (onEnquireViaChat) {
+                                        onEnquireViaChat({
+                                          recipientId: prof.id,
+                                          recipientName: prof.full_name,
+                                          recipientRole: 'professional',
+                                          projectTitle: `${prof.company_name || prof.full_name} Consultation`
+                                        });
+                                      } else {
+                                        setEnquiryModalProf(prof);
+                                        setEnquirySent(false);
+                                        setEnquiryText('');
+                                      }
+                                    }}
+                                    className={`w-full py-2 px-3 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                                      isPaidTier
+                                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                                        : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
+                                    }`}
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Enquire / Chat</span>
+                                    {!isPaidTier && (
+                                      <span className="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase flex items-center gap-0.5">
+                                        <Lock className="w-2.5 h-2.5" /> VIP
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })()
+                            )}
                           </div>
 
                         </div>

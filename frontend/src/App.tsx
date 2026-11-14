@@ -20,6 +20,7 @@ import { SupplierMarketplacePage } from './pages/supplier/SupplierMarketplacePag
 import { PublicSupplierProfile } from './pages/supplier/PublicSupplierProfile';
 import { CustomerProjectsPage } from './pages/customer/CustomerProjectsPage';
 import { VerificationManagement } from './pages/admin/VerificationManagement';
+import { AdminRevenueDashboard } from './pages/admin/AdminRevenueDashboard';
 import { CostEstimatorPage } from './pages/CostEstimatorPage';
 import { QuotationComparisonPage } from './pages/quotation/QuotationComparisonPage';
 
@@ -64,6 +65,7 @@ export const AppContent: React.FC = () => {
           <Route path="/suppliers/new" element={<CreateSupplierProfile />} />
           <Route path="/suppliers/:id" element={<PublicSupplierProfile />} />
           <Route path="/admin/verifications" element={<VerificationManagement />} />
+          <Route path="/admin/revenue" element={<AdminRevenueDashboard />} />
         </Routes>
       </main>
 

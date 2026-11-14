@@ -5,7 +5,8 @@ import { DEMO_USERS } from '../data/mockData';
 const INITIAL_ACCOUNTS: UserProfile[] = [
   DEMO_USERS.customer,
   DEMO_USERS.professional,
-  DEMO_USERS.supplier
+  DEMO_USERS.supplier,
+  DEMO_USERS.admin
 ];
 
 interface UserContextType {

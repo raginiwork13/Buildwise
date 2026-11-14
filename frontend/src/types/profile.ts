@@ -138,6 +138,8 @@ export interface SupplierProfileFull {
   verification_status: VerificationStatus;
   categories: { id?: string; category_name: string }[];
   products: SupplierProductItem[];
+  subscription_tier?: 'free' | 'pro' | 'premium';
+  is_sponsored?: boolean;
 }
 
 // --- Verification Types ---
