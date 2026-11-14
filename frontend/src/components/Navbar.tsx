@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { 
   Building2, Sparkles, ChevronDown, User, Bell, Edit3, 
-  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn
+  ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn, Scale
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { UserProfile } from '../types';
@@ -92,7 +92,13 @@ export const Navbar: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>AI Cost Estimator</span>
             </Link>
-            <a href="/#how-it-works" className="hover:text-amber-600 transition-colors text-xs">How It Works</a>
+            <Link 
+              to="/quotations/compare" 
+              className="text-slate-900 font-bold hover:text-purple-700 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-950 border border-purple-200 text-xs"
+            >
+              <Scale className="w-3.5 h-3.5 text-purple-600" />
+              <span>AI Quotation Comparison</span>
+            </Link>
           </nav>
 
           {/* Right Action: Notifications & Profile Box */}

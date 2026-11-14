@@ -1,69 +1,63 @@
-from typing import Optional, List
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
 
-class QuotationBase(BaseModel):
-    project_id: str
-    project_title: str
-    customer_id: Optional[str] = None
-    customer_name: str
-    provider_id: str
-    provider_name: str
-    provider_role: str = "professional"  # 'professional' | 'supplier'
-    provider_company: Optional[str] = None
-    total_estimated_price: float
-    material_costs: float = 0.0
-    labour_costs: float = 0.0
-    transport_charges: float = 0.0
-    service_charges: float = 0.0
-    expected_completion_time: str
-    payment_milestones: Optional[str] = None
-    materials_included: Optional[str] = None
-    materials_excluded: Optional[str] = None
-    terms_and_conditions: Optional[str] = None
-    quotation_validity_days: int = 30
-    status: str = "submitted"  # 'submitted' | 'approved' | 'rejected' | 'work_started'
+class QuotationItem(BaseModel):
+    description: str
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    rate: Optional[float] = None
+    amount: Optional[float] = None
 
-class QuotationCreate(QuotationBase):
-    pass
+class ExtractedQuotation(BaseModel):
+    contractor: str
+    project: Optional[str] = "Goa Residential Construction"
+    total_amount: float
+    gst: Optional[str] = "Standard applicable GST"
+    completion_period: Optional[str] = None
+    timeline_months: Optional[float] = None
+    warranty: Optional[str] = None
+    warranty_months: Optional[float] = None
+    payment_terms: Optional[str] = None
+    advance_pct: Optional[float] = None
+    items: List[QuotationItem] = []
 
-class QuotationUpdate(BaseModel):
-    status: Optional[str] = None
+class ContractorScoreRow(BaseModel):
+    rank: int = Field(..., alias="Rank")
+    contractor: str = Field(..., alias="Contractor")
+    price_score: float = Field(..., alias="Price Score")
+    scope_score: float = Field(..., alias="Scope Score")
+    material_score: float = Field(..., alias="Material Score")
+    completeness_score: float = Field(..., alias="Completeness (%)")
+    timeline_score: float = Field(..., alias="Timeline Score")
+    warranty_score: float = Field(..., alias="Warranty Score")
+    payment_score: float = Field(..., alias="Payment Score")
+    overall_score: float = Field(..., alias="Overall Score")
 
-class QuotationResponse(QuotationBase):
-    id: str
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    # Extra rich metadata for UI cards
+    total_price: float = 0.0
+    completion_period: str = ""
+    warranty: str = ""
+    payment_terms: str = ""
+    technical_spec_score: float = 0.0
+    brand_id_score: float = 0.0
+    highlights: List[str] = []
+    risk_flags: List[str] = []
 
-# --- Interests ---
-class InterestCreate(BaseModel):
-    project_id: str
-    project_title: str
-    provider_id: str
-    provider_name: str
-    provider_role: str = "professional"
-    provider_company: Optional[str] = None
-    message: Optional[str] = None
+    class Config:
+        populate_by_name = True
 
-class InterestResponse(InterestCreate):
-    id: str
-    created_at: Optional[datetime] = None
-
-# --- Chat Messages ---
-class ChatMessageCreate(BaseModel):
-    conversation_id: str
-    project_id: Optional[str] = None
-    project_title: Optional[str] = None
-    sender_id: str
-    sender_name: str
-    sender_role: str
-    recipient_id: str
-    recipient_name: str
-    recipient_role: str
-    message_text: str
-
-class ChatMessageResponse(ChatMessageCreate):
-    id: str
-    is_read: bool = False
-    created_at: Optional[datetime] = None
-
+class ComparisonResponse(BaseModel):
+    status: str = "success"
+    project_title: str = "Contractor Quotation Comparison"
+    total_contractors: int
+    winner: str
+    leaderboard: List[ContractorScoreRow]
+    criteria_weights: Dict[str, float] = {
+        "Price Score": 0.25,
+        "Scope Score": 0.25,
+        "Material Score": 0.15,
+        "Completeness (%)": 0.10,
+        "Timeline Score": 0.10,
+        "Warranty Score": 0.10,
+        "Payment Score": 0.05
+    }
