@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 
 from app.db.store import db, supabase_client
+from app.routers.notifications import add_notification
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -206,13 +207,69 @@ def confirm_project_completion(workspace_id: str, payload: dict):
     ws = db.project_workspaces.get(workspace_id)
     if not ws:
         raise HTTPException(status_code=404, detail="Workspace not found")
+    
     role = payload.get("role", "")
+    cust_name = ws.get("customer_name") or "Property Owner"
+    prof_name = ws.get("professional_name") or "Professional"
+    prof_company = ws.get("professional_company") or prof_name
+    proj_title = ws.get("project_title") or "Construction Project"
+
+    already_both_confirmed = ws.get("completion_confirmed_professional") and ws.get("completion_confirmed_customer")
+
     if role == "professional":
         ws["completion_confirmed_professional"] = True
     elif role == "customer":
         ws["completion_confirmed_customer"] = True
-    if ws.get("completion_confirmed_professional") and ws.get("completion_confirmed_customer"):
+
+    both_confirmed = ws.get("completion_confirmed_professional") and ws.get("completion_confirmed_customer")
+
+    if both_confirmed:
         ws["status"] = "completed"
+        ws["completed_at"] = datetime.now().isoformat()
+        if not already_both_confirmed:
+            # 1. Notification for Consumer (Customer)
+            add_notification(
+                title="🏆 Project Completed!",
+                desc=f'Project "{proj_title}" is officially completed! Both you and {prof_name} ({prof_company}) have confirmed the final completion and handover.',
+                recipient_role="customer",
+                recipient_name=cust_name,
+                sender_name=prof_name,
+                notif_type="project",
+                meta={"workspace_id": workspace_id, "project_title": proj_title, "status": "completed"}
+            )
+            # 2. Notification for Professional
+            add_notification(
+                title="🏆 Project Completed!",
+                desc=f'Project "{proj_title}" is officially completed! Both you and {cust_name} have confirmed the final completion and handover.',
+                recipient_role="professional",
+                recipient_name=prof_name,
+                sender_name=cust_name,
+                notif_type="project",
+                meta={"workspace_id": workspace_id, "project_title": proj_title, "status": "completed"}
+            )
+    else:
+        # One party confirmed; notify the other party to complete the dual confirmation
+        if role == "professional":
+            add_notification(
+                title="⏳ Completion Sign-Off Requested",
+                desc=f'{prof_name} has confirmed project completion for "{proj_title}". Please review and confirm your completion sign-off.',
+                recipient_role="customer",
+                recipient_name=cust_name,
+                sender_name=prof_name,
+                notif_type="project",
+                meta={"workspace_id": workspace_id, "project_title": proj_title, "status": "pending_customer_confirmation"}
+            )
+        elif role == "customer":
+            add_notification(
+                title="⏳ Completion Sign-Off Requested",
+                desc=f'{cust_name} has confirmed project completion for "{proj_title}". Please review and confirm your completion sign-off.',
+                recipient_role="professional",
+                recipient_name=prof_name,
+                sender_name=cust_name,
+                notif_type="project",
+                meta={"workspace_id": workspace_id, "project_title": proj_title, "status": "pending_professional_confirmation"}
+            )
+
     db.project_workspaces[workspace_id] = ws
     save_workspace_to_supabase(ws)
     return ws
