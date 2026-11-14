@@ -60,10 +60,17 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
       if (res.ok) {
         const data = await res.json();
         setQuotations(data);
+        return; // success — no fallback needed
       }
-    } catch {
-      // Demo initial quotations fallback with downloadable documents
-      setQuotations([
+      // Server returned an error (e.g. 404, 500) — fall through to demo data
+      console.warn('Quotations API returned', res.status, '— using demo data');
+    } catch (err) {
+      // Network error (backend offline) — fall through to demo data
+      console.warn('Quotations API unreachable:', err);
+    }
+
+    // Demo initial quotations fallback with downloadable documents
+    setQuotations([
         {
           id: 'quot-1',
           project_id: 'proj-c1',
