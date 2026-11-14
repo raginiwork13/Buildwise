@@ -22,6 +22,7 @@ import { CustomerProjectsPage } from './pages/customer/CustomerProjectsPage';
 import { VerificationManagement } from './pages/admin/VerificationManagement';
 import { AdminRevenueDashboard } from './pages/admin/AdminRevenueDashboard';
 import { CostEstimatorPage } from './pages/CostEstimatorPage';
+import { QuotationComparisonPage } from './pages/quotation/QuotationComparisonPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -55,6 +56,7 @@ export const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/cost-estimator" element={<CostEstimatorPage />} />
+          <Route path="/quotations/compare" element={<QuotationComparisonPage />} />
           <Route path="/professionals" element={<ProfessionalMarketplacePage />} />
           <Route path="/professionals/new" element={<CreateProfessionalProfile />} />
           <Route path="/professionals/:id" element={<PublicProfessionalProfile />} />
