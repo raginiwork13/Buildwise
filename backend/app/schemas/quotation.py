@@ -86,3 +86,32 @@ class ComparisonResponse(BaseModel):
         "Warranty Score": 0.10,
         "Payment Score": 0.05
     }
+
+class QuotationCreate(QuotationBase):
+    pass
+
+class QuotationUpdate(BaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    total_estimated_price: Optional[float] = None
+    expected_completion_time: Optional[str] = None
+
+class QuotationResponse(QuotationBase):
+    id: str
+    created_at: Any
+    updated_at: Optional[Any] = None
+
+class InterestCreate(BaseModel):
+    project_id: str
+    professional_id: str
+    professional_name: str
+    message: Optional[str] = None
+
+class InterestResponse(BaseModel):
+    id: str
+    project_id: str
+    professional_id: str
+    professional_name: str
+    message: Optional[str] = None
+    created_at: Any
+

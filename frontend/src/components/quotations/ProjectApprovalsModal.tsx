@@ -143,8 +143,16 @@ export const ProjectApprovalsModal: React.FC<ProjectApprovalsModalProps> = ({
 
     if (decision === 'accept') {
       setActionSuccess(`🎉 Project Engagement Accepted! Both sides have approved. The project workspace is now active.`);
+      window.dispatchEvent(new CustomEvent('new_notification', {
+        detail: {
+          title: '🎉 Project Commenced',
+          desc: `You approved project commencement for "${quot.project_title}" with ${quot.customer_name}.`
+        }
+      }));
+      window.dispatchEvent(new Event('refresh_notifications'));
     } else {
       setActionSuccess(`Project engagement declined.`);
+      window.dispatchEvent(new Event('refresh_notifications'));
     }
 
     // Refresh count

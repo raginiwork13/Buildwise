@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import { 
   Building2, Sparkles, ChevronDown, User, Bell, Edit3, 
   ExternalLink, HardHat, Home, Truck, ShieldCheck, Check, Plus, FolderKanban, MessageSquare, LogIn, Scale,
-  Crown, Zap, Shield, Package, X, Award
+  Crown, Zap, Shield, Package, X, Award, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { UserProfile } from '../types';
@@ -99,14 +99,29 @@ export const Navbar: React.FC = () => {
       }
     };
 
+    const handleNewNotification = (e: any) => {
+      const detail = e.detail;
+      fetchNotifications();
+      if (detail) {
+        setToast({
+          id: `toast-${Date.now()}`,
+          title: detail.title || 'New Notification',
+          desc: detail.desc || 'You have received an update.',
+          type: detail.type || 'system'
+        });
+      }
+    };
+
     window.addEventListener('supplier_order_placed', handleOrderPlaced);
     window.addEventListener('project_completed', handleProjectCompleted);
+    window.addEventListener('new_notification', handleNewNotification);
     window.addEventListener('refresh_notifications', fetchNotifications);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('supplier_order_placed', handleOrderPlaced);
       window.removeEventListener('project_completed', handleProjectCompleted);
+      window.removeEventListener('new_notification', handleNewNotification);
       window.removeEventListener('refresh_notifications', fetchNotifications);
     };
   }, [role, currentUser]);
@@ -272,6 +287,8 @@ export const Navbar: React.FC = () => {
                             <span className="flex items-center gap-1.5">
                               {n.type === 'order' && <Package className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                               {n.type === 'project' && <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                              {n.type === 'quotation' && <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                              {n.type === 'enquiry' && <MessageSquare className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                               {n.title}
                             </span>
                             <span className="text-[10px] text-slate-400 font-normal shrink-0">{n.time}</span>

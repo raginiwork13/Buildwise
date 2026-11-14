@@ -56,11 +56,19 @@ def add_notification(
     save_notification_to_supabase(notif)
     return notif
 
+def normalize_role(r: Optional[str]) -> str:
+    if not r:
+        return ""
+    val = r.lower()
+    if val in ("consumer", "customer", "client", "buyer"):
+        return "customer"
+    return val
+
 @router.get("")
 def list_notifications(
-    role: Optional[str] = Query(None, description="Filter by recipient role: customer, professional, supplier"),
-    recipient_id: Optional[str] = Query(None, description="Filter by recipient user ID"),
-    recipient_name: Optional[str] = Query(None, description="Filter by recipient name")
+    role: Optional[str] = None,
+    recipient_id: Optional[str] = None,
+    recipient_name: Optional[str] = None
 ):
     if not hasattr(db, "notifications"):
         db.notifications = {}
@@ -69,17 +77,20 @@ def list_notifications(
     filtered = []
 
     for n in all_notifs:
-        notif_role = (n.get("recipient_role") or "all").lower()
+        notif_role_norm = normalize_role(n.get("recipient_role") or "all")
         
         # If role filter is provided:
-        if role:
-            r = role.lower()
+        if role and isinstance(role, str):
+            r_norm = normalize_role(role)
             # Match exact role or broadcast 'all'
-            if notif_role != "all" and notif_role != r:
+            if notif_role_norm != "all" and notif_role_norm != r_norm:
                 continue
 
         # Optional recipient_id or name filter if provided
-        if recipient_id and n.get("recipient_id") and n.get("recipient_id") != recipient_id:
+        if recipient_id and isinstance(recipient_id, str) and n.get("recipient_id") and n.get("recipient_id") != recipient_id:
+            continue
+
+        if recipient_name and isinstance(recipient_name, str) and n.get("recipient_name") and recipient_name.lower() not in (n.get("recipient_name") or "").lower():
             continue
         
         filtered.append(n)

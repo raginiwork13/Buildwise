@@ -117,6 +117,13 @@ export const QuotationsDashboardModal: React.FC<QuotationsDashboardModalProps> =
 
     if (newStatus === 'approved') {
       setActionSuccess(`Quotation approved! Engagement notification sent to ${providerName} for their approval.`);
+      window.dispatchEvent(new CustomEvent('new_notification', {
+        detail: {
+          title: '✅ Quotation Approved',
+          desc: `You approved quotation from ${providerName}. Engagement notice sent.`
+        }
+      }));
+      window.dispatchEvent(new Event('refresh_notifications'));
     } else if (newStatus === 'work_started') {
       setActionSuccess(`Project successfully commenced with ${providerName}! Milestone tracking active.`);
       // Auto-create a project workspace

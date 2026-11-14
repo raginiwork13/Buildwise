@@ -22,6 +22,7 @@ from app.schemas.professional import (
 )
 from app.schemas.verification import VerificationSubmissionCreate, VerificationSubmissionResponse
 from app.db.store import db, supabase_client
+from app.routers.notifications import add_notification
 
 router = APIRouter(prefix="/professionals", tags=["professionals"])
 
@@ -532,4 +533,73 @@ def submit_verification(id: str, payload: VerificationSubmissionCreate):
     # Update profile status to pending
     db.professional_profiles[id]["verification_status"] = "pending"
     return v_data
+
+# --- Enquiries from Consumers or Suppliers ---
+class ProfessionalEnquiryCreate(BaseModel):
+    professional_id: str
+    professional_name: str
+    professional_company: Optional[str] = None
+    sender_name: str
+    sender_role: str = "customer" # 'customer' | 'supplier'
+    sender_email: Optional[str] = None
+    sender_phone: Optional[str] = None
+    project_location: str
+    budget_range: Optional[str] = None
+    requirements: str
+
+@router.post("/enquire", status_code=201)
+def submit_professional_enquiry(payload: ProfessionalEnquiryCreate):
+    enq_id = f"enq-{uuid.uuid4().hex[:8]}"
+    now = datetime.now().isoformat()
+    enq_data = payload.dict()
+    enq_data["id"] = enq_id
+    enq_data["created_at"] = now
+
+    if not hasattr(db, "enquiries"):
+        db.enquiries = {}
+    db.enquiries[enq_id] = enq_data
+
+    # 1. Professional Notification: "so and so person enquired for your profile"
+    role_label = "Supplier" if payload.sender_role.lower() == "supplier" else "Consumer"
+    add_notification(
+        title="📋 New Enquiry Received",
+        desc=f"{payload.sender_name} ({role_label}) enquired for your profile! Location: {payload.project_location}. Requirements: '{payload.requirements[:90]}...'",
+        recipient_role="professional",
+        recipient_id=payload.professional_id,
+        recipient_name=payload.professional_name,
+        sender_name=payload.sender_name,
+        notif_type="enquiry",
+        meta={
+            "enquiry_id": enq_id,
+            "sender_name": payload.sender_name,
+            "sender_role": payload.sender_role,
+            "sender_phone": payload.sender_phone,
+            "location": payload.project_location,
+            "budget": payload.budget_range,
+            "requirements": payload.requirements
+        }
+    )
+
+    # 2. Sender Notification (Consumer or Supplier): "Enquiry Sent"
+    add_notification(
+        title="Enquiry Sent",
+        desc=f"Your enquiry has been successfully sent to {payload.professional_company or payload.professional_name}.",
+        recipient_role=payload.sender_role.lower(),
+        recipient_name=payload.sender_name,
+        sender_name=payload.professional_name,
+        notif_type="enquiry",
+        meta={
+            "enquiry_id": enq_id,
+            "professional_name": payload.professional_name,
+            "professional_id": payload.professional_id
+        }
+    )
+
+    return {"status": "success", "enquiry_id": enq_id, "data": enq_data}
+
+@router.post("/{id}/enquire", status_code=201)
+def submit_professional_enquiry_by_id(id: str, payload: ProfessionalEnquiryCreate):
+    payload.professional_id = id
+    return submit_professional_enquiry(payload)
+
 
